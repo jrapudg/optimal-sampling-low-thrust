@@ -10,6 +10,16 @@ cd ..
 catkin_build
 source devel/setup.bash
 ```
+## Naming conventions
+
+Functions: Upper Camel Case: PascalCase(): (e.g., MyClass, VelocityCalculator).
+Class: Upper Camel Case: PascalCase
+Member variable: snake_case 
+Data structures: e.g. Data_Structure
+
+## Testing
+
+TODO - Using https://github.com/catchorg/Catch2/blob/v2.x/docs/tutorial.md#top 
 
 ## Project Proposal
 
@@ -24,12 +34,12 @@ We want to leverage the cost-to-go function of linear quadratic regulation (LQR)
 [2] Perez, Alejandro, et al. "LQR-RRT*: Optimal sampling-based motion planning with automatically derived extension heuristics." 2012 IEEE International Conference on Robotics and Automation. IEEE, 2012.
 
 ## TODO (non-exhaustive)
-- Planar dynamics
+- Scaled version of dynamics
+- CR3BP
+- Differentiation for linearization 
 - RRT, RRT* implementation (+ others if necessary)
-- LQR cost-to-go
 - Orbit sampling (LEO, MEO, GEO, GTO, Lunar)
 - Conversion orbital elements >< cartesian state 
-- DeltaV instead of thrust 
 - Automated file saving trajectory + format
 - Automated visualizer, spacecraft mesh + planets/solar system/background (need to handle the scale)
 
