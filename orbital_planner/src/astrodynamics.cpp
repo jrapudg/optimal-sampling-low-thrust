@@ -1,6 +1,9 @@
 #include "astrodynamics.hpp"
 
 
+namespace Astrodynamics
+{
+
 
 void PlanarCentralBody(State4D_ECI x, Control2D u, State4D_ECI& next_state)
 {
@@ -75,4 +78,6 @@ State6D_ECI OE2ECI(State6D_OE orbital_elements)
 State6D_OE ECI2OE(State6D_ECI eci_state)
 {
     
+}
+
 }

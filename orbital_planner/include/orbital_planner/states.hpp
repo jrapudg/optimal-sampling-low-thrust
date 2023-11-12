@@ -5,20 +5,17 @@
 #include <iostream>
 #include <cmath>
 
-#define MU 3.986004418e14
-#define G 6.67430e-11
-#define M 5.9722e24
 
 
 // Constants for minimum and maximum altitudes (in kilometers) for LEO, MEO, and GEO
-const double LEO_MIN = 160.0;  // Minimum altitude for LEO
-const double LEO_MAX = 2000.0; // Maximum altitude for LEO
+#define LEO_MIN 160.0;  // Minimum altitude for LEO
+#define LEO_MAX 2000.0; // Maximum altitude for LEO
 
-const double MEO_MIN = 2000.0; // Minimum altitude for MEO
-const double MEO_MAX = 35786.0; // Maximum altitude for MEO
+#define MEO_MIN 2000.0; // Minimum altitude for MEO
+#define MEO_MAX 35786.0; // Maximum altitude for MEO
 
-const double GEO_MIN = 35786.0; // Minimum altitude for GEO
-const double GEO_MAX = 42164.0; // Maximum altitude for GEO
+#define GEO_MIN 35786.0; // Minimum altitude for GEO
+#define GEO_MAX 42164.0; // Maximum altitude for GEO
 
 
 
@@ -124,8 +121,8 @@ public:
             1. a, Semi-major axis [m]
             2. e, Eccentricity [dimensionless]
             3. i, Inclination [rad]
-            4. Ω, Right Ascension of the Ascending Node (RAAN) [rad]
-            5. ω, Argument of Perigee [ramd]
+            4. w, Right Ascension of the Ascending Node (RAAN) [rad]
+            5. w, Argument of Perigee [ramd]
             6. t, Mean anomaly [rad]
         */
 
@@ -133,7 +130,7 @@ public:
         double e = initial_state[1]; // Eccentricity [dimensionless]
         double i = initial_state[2]; // Inclination [rad]
         double RAAN = initial_state[3]; // Right Ascension of the Ascending Node (RAAN) [rad]
-        double ω = initial_state[4]; // Argument of Perigee [rad]
+        double w = initial_state[4]; // Argument of Perigee [rad]
         double t = initial_state[5]; // Mean anomaly [rad]
 
         if (a <= 0.0) {
@@ -148,8 +145,8 @@ public:
         if (RAAN < 0.0 || RAAN >= 2 * M_PI) {
             throw std::runtime_error("Right Ascension of the Ascending Node (RAAN) must be in the range [0, 2π).");
         }
-        if (ω < 0.0 || ω >= 2 * M_PI) {
-            throw std::runtime_error("Argument of Perigee (ω) must be in the range [0, 2π).");
+        if (w < 0.0 || w >= 2 * M_PI) {
+            throw std::runtime_error("Argument of Perigee (w) must be in the range [0, 2π).");
         }
         if (t < 0.0 || t >= 2 * M_PI) {
             throw std::runtime_error("Mean anomaly (M) must be in the range [0, 2π).");

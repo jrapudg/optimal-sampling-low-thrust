@@ -1,6 +1,17 @@
 #include <string>
 #include "states.hpp"
 
+
+namespace Astrodynamics
+{
+
+
+#define MU 3.986004418e14
+#define G 6.67430e-11
+#define M 5.9722e24
+
+
+
 /*
 TODO 
 - Docs for each function 
@@ -41,3 +52,7 @@ void SampleAroundOrbit(State6D_ECI current_state, State6D_ECI &sampled_eci_state
 State6D_ECI OE2ECI(State6D_OE orbital_elements);
 
 State6D_OE ECI2OE(State6D_ECI eci_state);
+
+
+
+}
