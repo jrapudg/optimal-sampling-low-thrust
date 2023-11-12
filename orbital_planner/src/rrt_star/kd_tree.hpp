@@ -29,12 +29,9 @@ class KD_Tree{
 	public:
 		// Tree attributes
 		std::shared_ptr<KD_Node> root = nullptr;
-		int DOF;
 
-		// Constructor
-   		KD_Tree(int _DOF) : DOF(_DOF) {}
 		// Constructor empty
-   		KD_Tree() : DOF(1) {}
+   		KD_Tree() {};
 
 		// Methods
 		// Method to create a KD_Node with state
@@ -42,13 +39,13 @@ class KD_Tree{
 		// Method to insert a KD_Node into the tree
 		void insert(std::shared_ptr<KD_Node>& root, std::shared_ptr<Graph_Node> new_node, int depth);
 		// Method to calculate distance between nodes
-		double _distance(const double* a, const double* b);
+		double _distance(const std::vector<double>& a, const std::vector<double>& b);
 		// Method to find the nearest neighbor
-		std::shared_ptr<Graph_Node> find_nearest_neighbor(std::shared_ptr<KD_Node>& root, const double* target, int depth);
+		std::shared_ptr<Graph_Node> find_nearest_neighbor(std::shared_ptr<KD_Node>& root, const std::vector<double>& target, int depth);
 		// Method to find the k nearest neighbors
-		std::vector<std::shared_ptr<Graph_Node>> find_k_nearest_neighbors(std::shared_ptr<KD_Node>& root, const double* target, int k, double max_distance);
+		std::vector<std::shared_ptr<Graph_Node>> find_k_nearest_neighbors(std::shared_ptr<KD_Node>& root, const std::vector<double>& target, int k, double max_distance);
         // Method to find nearest neighbors within a radius
-		std::vector<std::shared_ptr<Graph_Node>> find_neighbors_within_radius(std::shared_ptr<KD_Node>& root, const double* target, double alpha);
+		std::vector<std::shared_ptr<Graph_Node>> find_neighbors_within_radius(std::shared_ptr<KD_Node>& root, const std::vector<double>& target, double alpha);
 };
 
 #endif // KD_TREE_H

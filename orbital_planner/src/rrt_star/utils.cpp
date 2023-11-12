@@ -191,7 +191,7 @@ int IsValidLineSegment(double x0, double y0, double x1, double y1, double*	map,
 	return 1;
 }
 
-int IsValidArmConfiguration(double* angles, int numofDOFs, double*	map,
+int IsValidArmConfiguration(std::vector<double>& angles, double*	map,
 			 int x_size, int y_size) {
     double x0,y0,x1,y1;
     int i;
@@ -199,7 +199,7 @@ int IsValidArmConfiguration(double* angles, int numofDOFs, double*	map,
 	 //iterate through all the links starting with the base
 	x1 = ((double)x_size)/2.0;
 	y1 = 0;
-	for(i = 0; i < numofDOFs; i++){
+	for(i = 0; i < angles.size(); i++){
 		//compute the corresponding line segment
 		x0 = x1;
 		y0 = y1;
@@ -240,91 +240,119 @@ double circular_distance(double angle1, double angle2) {
     return MIN(diff, abs(2*M_PI - diff));
 };
 
-double config_distance(const double* a, const double* b, int DOF) {
-	double dist = 0;
-	for (size_t i = 0; i < DOF; ++i) {
-		dist += circular_distance(a[i], b[i]);
-	}
-	return dist;
+double config_distance(const std::vector<double>& a, const std::vector<double>& b) {
+    // It's good practice to check that the sizes of the vectors are the same
+    if (a.size() != b.size()) {
+        throw std::invalid_argument("Vectors must be of the same size.");
+    }
+
+    double dist = 0;
+    for (size_t i = 0; i < a.size(); ++i) {
+        dist += circular_distance(a[i], b[i]);
+    }
+    return dist;
 };
 
-double calculate_norm(const double* config, int DOF) {
+double calculate_norm(const std::vector<double>& config) {
     double norm = 0.0;
-    
-    for (int i = 0; i < DOF; i++) {
+
+    for (size_t i = 0; i < config.size(); i++) {
         norm += config[i] * config[i];
     }
-    
+
     return std::sqrt(norm);
 };
 
 // Function to generate n uniformly spaced points between start and end configurations
-std::vector<double*> generate_uniform_interpolation(const double* start_config, const double* end_config, int n, int DOF) {
-    std::vector<double*> interpolated_points;
+std::vector<std::vector<double>> generate_uniform_interpolation(const std::vector<double>& start_config,
+                                                                const std::vector<double>& end_config,
+                                                                int n) {
+    if (n <= 0) {
+        throw std::invalid_argument("Number of points 'n' must be greater than 0.");
+    }
+
+    if (start_config.size() != end_config.size()) {
+        throw std::invalid_argument("Start and end configurations must be of the same size.");
+    }
+
+    std::vector<std::vector<double>> interpolated_points;
+
+    // Special case when only one point is requested
+    if (n == 1) {
+        interpolated_points.push_back(start_config);
+        return interpolated_points;
+    }
 
     for (int i = 0; i < n; ++i) {
         double t = static_cast<double>(i) / (n - 1); // Interpolation parameter [0, 1]
 
-        double* interpolated_config = new double[DOF];
+        std::vector<double> interpolated_config(start_config.size());
 
         // Linear interpolation for each degree of freedom
-        for (int j = 0; j < DOF; ++j) {
+        for (size_t j = 0; j < start_config.size(); ++j) {
             interpolated_config[j] = start_config[j] + t * (end_config[j] - start_config[j]);
         }
         interpolated_points.push_back(interpolated_config);
+    }
+    return interpolated_points;
+};
+
+std::vector<std::vector<double>> generate_epsilon_interpolation(const std::vector<double>& start_config,
+                                                                const std::vector<double>& end_config,
+                                                                int n, 
+                                                                double epsilon) {
+    double distance = config_distance(start_config, end_config);
+    std::vector<std::vector<double>> interpolated_points;
+
+    if (distance <= epsilon) {
+        interpolated_points = generate_uniform_interpolation(start_config, end_config, n);
+    } else {
+        // Interpolate towards end_config an epsilon distance
+        std::vector<double> epsilon_config(start_config.size());
+
+        for (size_t i = 0; i < start_config.size(); i++) {
+            double diff = end_config[i] - start_config[i];
+            double step = epsilon * diff / distance;
+            epsilon_config[i] = start_config[i] + step;
+        }
+
+        interpolated_points = generate_uniform_interpolation(start_config, epsilon_config, n);
     }
 
     return interpolated_points;
 };
 
-std::vector<double*>  generate_epsilon_interpolation(const double* start_config, const double* end_config, int n, int DOF, double epsilon) {
-    double distance = config_distance(start_config, end_config, DOF);
-	std::vector<double*> interpolated_points;
-
-    if (distance <= epsilon) {
-        interpolated_points = generate_uniform_interpolation(start_config, end_config, n, DOF);
-    } else {
-	
-        // Interpolate towards end_config an epsilon distance
-		double epsilon_config[DOF];
-        for (int i = 0; i < DOF; i++) {
-            double diff = end_config[i] - start_config[i];
-            double step = epsilon * diff / distance;
-            epsilon_config[i] = start_config[i] + step;
-        }
-        interpolated_points = generate_uniform_interpolation(start_config, epsilon_config, n, DOF);
+bool are_configs_equal(const std::vector<double>& config1, const std::vector<double>& config2) {
+    if (config1.size() != config2.size()) {
+        return false;  // Vectors are of different sizes
     }
-	return interpolated_points;
-};
 
-// Function to deallocate memory for the dynamically allocated arrays
-void deallocate_interpolated_points(std::vector<double*>& points) {
-    for (double* point : points) {
-        delete[] point; // Deallocate the dynamically allocated array
-    }
-    points.clear(); // Clear the vector to release the pointers
-};
-
-bool are_configs_equal(const double* config1, const double* config2, int dof){
-    for (int i = 0; i < dof; i++) {
+    for (size_t i = 0; i < config1.size(); i++) {
         if (config1[i] != config2[i]) {
             return false; // At least one element is different
         }
     }
     return true; // All elements are equal
-};
+}
 
-bool are_configs_close(const double* config1, const double* config2, int dof, double min_distance){
-	if (config_distance(config1, config2, dof) <= min_distance){
-		return true;
-	}
-	return false;
-};
+bool are_configs_close(const std::vector<double>& config1, const std::vector<double>& config2, double min_distance) {
+    if (config1.size() != config2.size()) {
+        return false;  // Configurations must be of the same size
+    }
 
-void print_config(double* config, int DOF){
-	std::cout << "Config (";
-	for (int j = 0; j < DOF; j++){
-		std::cout << config[j] << " ";
-	}
-	std::cout << ")" << std::endl;
-};
+    if (config_distance(config1, config2) <= min_distance) {
+        return true;
+    }
+    return false;
+}
+
+void print_config(const std::vector<double>& config) {
+    std::cout << "Config (";
+    for (size_t j = 0; j < config.size(); j++) {
+        std::cout << config[j];
+        if (j < config.size() - 1) {
+            std::cout << ", ";  // Add comma between elements, but not after the last one
+        }
+    }
+    std::cout << ")" << std::endl;
+}

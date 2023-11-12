@@ -8,6 +8,7 @@ std::shared_ptr<KD_Node> KD_Tree::create_KD_Node(std::shared_ptr<Graph_Node> g_n
 
 // Method to insert a KD_Node into the tree
 void KD_Tree::insert(std::shared_ptr<KD_Node>& root, std::shared_ptr<Graph_Node> new_node, int depth) {
+    int DOF = new_node->config.size();
     if (root == nullptr) {
         // Create a new node if the tree is empty
         root = create_KD_Node(new_node);
@@ -29,18 +30,18 @@ void KD_Tree::insert(std::shared_ptr<KD_Node>& root, std::shared_ptr<Graph_Node>
 };
 
 // Method to calculate distance between nodes
-double KD_Tree::_distance(const double* a, const double* b) {
-    return config_distance(a, b, DOF);
+double KD_Tree::_distance(const std::vector<double>& a, const std::vector<double>& b) {
+    return config_distance(a, b);
 };
 
 // Method to find the nearest neighbor
-std::shared_ptr<Graph_Node> KD_Tree::find_nearest_neighbor(std::shared_ptr<KD_Node>& root, const double* target, int depth) {
+std::shared_ptr<Graph_Node> KD_Tree::find_nearest_neighbor(std::shared_ptr<KD_Node>& root, const std::vector<double>& target, int depth) {
     if (root == nullptr) {
         //std::cout << "Nullptr found in root" << std::endl;
         return nullptr;
     }
 
-    int axis = depth % DOF;
+    int axis = depth % target.size();
     std::shared_ptr<Graph_Node> best = root->g_node;
     double best_distance = _distance(target, best->config);
 
@@ -59,7 +60,7 @@ std::shared_ptr<Graph_Node> KD_Tree::find_nearest_neighbor(std::shared_ptr<KD_No
 };
 
 // Method to find the k nearest neighbors
-std::vector<std::shared_ptr<Graph_Node>> KD_Tree::find_k_nearest_neighbors(std::shared_ptr<KD_Node>& root, const double* target, int k, double max_distance) {
+std::vector<std::shared_ptr<Graph_Node>> KD_Tree::find_k_nearest_neighbors(std::shared_ptr<KD_Node>& root, const std::vector<double>& target, int k, double max_distance) {
     if (root == nullptr) {
         //std::cout << "Nullptr found in root" << std::endl;
         return {};
@@ -74,7 +75,7 @@ std::vector<std::shared_ptr<Graph_Node>> KD_Tree::find_k_nearest_neighbors(std::
             return;
         }
 
-        int axis = depth % DOF;
+        int axis = depth % target.size();
         std::shared_ptr<Graph_Node> current = node->g_node;
         current->h = _distance(target, current->config);
 
@@ -112,7 +113,7 @@ std::vector<std::shared_ptr<Graph_Node>> KD_Tree::find_k_nearest_neighbors(std::
     return nearest_neighbors;
 };
 
-std::vector<std::shared_ptr<Graph_Node>> KD_Tree::find_neighbors_within_radius(std::shared_ptr<KD_Node>& root, const double* target, double alpha) {
+std::vector<std::shared_ptr<Graph_Node>> KD_Tree::find_neighbors_within_radius(std::shared_ptr<KD_Node>& root, const std::vector<double>& target, double alpha) {
     if (root == nullptr) {
         return {};
     }
@@ -126,7 +127,7 @@ std::vector<std::shared_ptr<Graph_Node>> KD_Tree::find_neighbors_within_radius(s
         int depth = node_stack.top().second;
         node_stack.pop();
 
-        int axis = depth % DOF;
+        int axis = depth % target.size();
         double distance = _distance(target, current->g_node->config);
 
         // If the current node is within the radius

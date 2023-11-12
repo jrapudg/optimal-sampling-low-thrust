@@ -88,8 +88,8 @@ int get_next_point(bresenham_param_t *params);
 int IsValidLineSegment(double x0, double y0, double x1, double y1, double*	map,
 			 int x_size, int y_size);
 
-int IsValidArmConfiguration(double* angles, int numofDOFs, double*	map,
-			 int x_size, int y_size);
+int IsValidArmConfiguration(std::vector<double>& angles, double* map,
+							int x_size, int y_size);
 
 //*******************************************************************************************************************//
 //                                                                                                                   //
@@ -99,22 +99,19 @@ int IsValidArmConfiguration(double* angles, int numofDOFs, double*	map,
 
 double circular_distance(double angle1, double angle2);
 
-double config_distance(const double* a, const double* b, int DOF);
+double config_distance(const std::vector<double>& a, const std::vector<double>& b);
 
-double calculate_norm(const double* config, int DOF);
+double calculate_norm(const std::vector<double>& config);
 
 // Function to generate n uniformly spaced points between start and end configurations
-std::vector<double*> generate_uniform_interpolation(const double* start_config, const double* end_config, int n, int DOF);
+std::vector<std::vector<double>> generate_uniform_interpolation(const std::vector<double>& start_config, const std::vector<double>& end_config, int n);
 
-std::vector<double*>  generate_epsilon_interpolation(const double* start_config, const double* end_config, int n, int DOF, double epsilon);
+std::vector<std::vector<double>>  generate_epsilon_interpolation(const std::vector<double>& start_config, const std::vector<double>& end_config, int n, double epsilon);
 
-// Function to deallocate memory for the dynamically allocated arrays
-void deallocate_interpolated_points(std::vector<double*>& points);
+bool are_configs_equal(const std::vector<double>& config1, const std::vector<double>& config2);
 
-bool are_configs_equal(const double* config1, const double* config2, int dof);
+bool are_configs_close(const std::vector<double>& config1, const std::vector<double>& config2, double min_distance);
 
-bool are_configs_close(const double* config1, const double* config2, int dof, double min_distance);
-
-void print_config(double* config, int DOF);
+void print_config(const std::vector<double>& config);
 
 #endif // UTILS_H

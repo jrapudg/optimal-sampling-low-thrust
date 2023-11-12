@@ -4,62 +4,16 @@
  *
  *=================================================================*/
 #include "planner.hpp"
-//*******************************************************************************************************************//
-//                                                                                                                   //
-//                                          DEFAULT PLANNER FUNCTION                                                 //
-//                                                                                                                   //
-//*******************************************************************************************************************//
-
-static void planner(
-			double* map,
-			int x_size,
-			int y_size,
-			double* armstart_anglesV_rad,
-			double* armgoal_anglesV_rad,
-            int numofDOFs,
-            double*** plan,
-            int* planlength,
-			int& numberOfNodes)
-{
-	//no plan by default
-	*plan = NULL;
-	*planlength = 0;
-		
-    //for now just do straight interpolation between start and goal checking for the validity of samples
-
-    double distance = 0;
-    int i,j;
-    for (j = 0; j < numofDOFs; j++){
-        if(distance < fabs(armstart_anglesV_rad[j] - armgoal_anglesV_rad[j]))
-            distance = fabs(armstart_anglesV_rad[j] - armgoal_anglesV_rad[j]);
-    }
-    int numofsamples = (int)(distance/(PI/20));
-    if(numofsamples < 2){
-        printf("the arm is already at the goal\n");
-        return;
-    }
-    *plan = (double**) malloc(numofsamples*sizeof(double*));
-    int firstinvalidconf = 1;
-    for (i = 0; i < numofsamples; i++){
-        (*plan)[i] = (double*) malloc(numofDOFs*sizeof(double)); 
-        for(j = 0; j < numofDOFs; j++){
-            (*plan)[i][j] = armstart_anglesV_rad[j] + ((double)(i)/(numofsamples-1))*(armgoal_anglesV_rad[j] - armstart_anglesV_rad[j]);
-        }
-        if(!IsValidArmConfiguration((*plan)[i], numofDOFs, map, x_size, y_size) && firstinvalidconf) {
-            firstinvalidconf = 1;
-            printf("ERROR: Invalid arm configuration!!!\n");
-        }
-    }    
-    *planlength = numofsamples;
-    
-    return;
-}
 
 //*******************************************************************************************************************//
 //                                                                                                                   //
 //                                           RRT STAR IMPLEMENTATION                                                 //
 //                                                                                                                   //
 //*******************************************************************************************************************//
+std::vector<double> convertArrayToVector(const double* array, int size) {
+    // Construct a vector from the array elements
+    return std::vector<double>(array, array + size);
+}
 
 static void plannerRRTStar(
     double *map,
@@ -72,9 +26,12 @@ static void plannerRRTStar(
     int *planlength,
 	int& numberOfNodes)
 {	
+	std::vector<double> armstart_anglesV_rad_vec = convertArrayToVector(armstart_anglesV_rad, numofDOFs);
+	std::vector<double> armgoal_anglesV_rad_vec = convertArrayToVector(armgoal_anglesV_rad, numofDOFs);
+
     std::cout << std::endl << "******RRT-STAR PLANNER*****" << std::endl;
-	RRT_Star_Planner planner_rrt_star = RRT_Star_Planner(armstart_anglesV_rad, 
-														 armgoal_anglesV_rad, 
+	RRT_Star_Planner planner_rrt_star = RRT_Star_Planner(armstart_anglesV_rad_vec, 
+														 armgoal_anglesV_rad_vec, 
 														 numofDOFs, map, x_size, y_size,
 														 plan, planlength);
 
@@ -83,8 +40,6 @@ static void plannerRRTStar(
 	std::cout << "Graph Nodes: " << planner_rrt_star.tree.list.size() << std::endl;
 	if (!planner_rrt_star.path_found){
 		std::cout << "RESULT -> PATH NOT FOUND WITH RRT-STAR" << std::endl;
-		planner(map, x_size, y_size, armstart_anglesV_rad, armgoal_anglesV_rad, numofDOFs, plan, planlength, numberOfNodes);
-		std::cout << "Return interpolation" << std::endl;
 	}
 	std::cout << "*******PLAN DONE*******" << std::endl << std::endl;
 	numberOfNodes = planner_rrt_star.tree.list.size();
@@ -123,8 +78,11 @@ int main(int argc, char** argv) {
 	string outputFile = argv[6];
 	string outputFileExtra = "extra.txt";
 
-	if(!IsValidArmConfiguration(startPos, numOfDOFs, map, x_size, y_size)||
-			!IsValidArmConfiguration(goalPos, numOfDOFs, map, x_size, y_size)) {
+	std::vector<double> startPos_vec = convertArrayToVector(startPos, numOfDOFs);
+	std::vector<double> goalPos_vec = convertArrayToVector(goalPos, numOfDOFs);
+
+	if(!IsValidArmConfiguration(startPos_vec, map, x_size, y_size)||
+			!IsValidArmConfiguration(goalPos_vec, map, x_size, y_size)) {
 		throw runtime_error("Invalid start or goal configuration!\n");
 	}
 
@@ -153,7 +111,7 @@ int main(int argc, char** argv) {
     }
     else
     {
-        planner(map, x_size, y_size, startPos, goalPos, numOfDOFs, &plan, &planlength, numberOfNodes);
+        plannerRRTStar(map, x_size, y_size, startPos, goalPos, numOfDOFs, &plan, &planlength, numberOfNodes);
     }
 
 	//// Feel free to modify anything above.
