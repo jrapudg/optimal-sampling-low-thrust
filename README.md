@@ -1,5 +1,9 @@
 # On-Orbit Optimal Kinodynamic Planning for Low-Thrust Trajectory Maneuvers
 
+## Requires
+
+Eigen3 - https://eigen.tuxfamily.org/dox/GettingStarted.html
+
 ## Running the Code
 
 ```
@@ -13,8 +17,11 @@ source devel/setup.bash
 ## Naming conventions
 
 Functions: Upper Camel Case: PascalCase(): (e.g., MyClass, VelocityCalculator).
+
 Class: Upper Camel Case: PascalCase
+
 Member variable: snake_case 
+
 Data structures: e.g. Data_Structure
 
 ## Testing
