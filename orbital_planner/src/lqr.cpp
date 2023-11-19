@@ -166,7 +166,6 @@ void clohessy_wiltshire(Eigen::MatrixXd& A, Eigen::MatrixXd& B, double m=100.0)
         0, 1, 0, 
         0, 0, 1;
     
-    B /= m;
 
 }
 
