@@ -15,11 +15,55 @@ void Tree::add_edge(std::shared_ptr<Graph_Node> node, std::shared_ptr<Graph_Node
 }
 
 std::shared_ptr<Graph_Node> Tree::find_nearest_neighbor(const std::vector<double>& target){
-    return kd_tree.find_nearest_neighbor(kd_tree.root, target, 0);
+    int nearest_neighbor = 0;
+    double best_distance = config_distance(list[0]->config, target);
+    for(const auto& value : list)
+    {
+        double neighbor_dist = config_distance(target, value.second->config);
+        if(neighbor_dist < best_distance)
+        {
+            best_distance = neighbor_dist;
+            nearest_neighbor = value.first;
+        }
+    }
+    // std::shared_ptr<Graph_Node> gt_nearest_neighbor = kd_tree.find_nearest_neighbor(kd_tree.root, target, 0);
+    // std::cout << gt_nearest_neighbor->index << " " << nearest_neighbor << std::endl;
+
+    return list[nearest_neighbor];
 };
 
+struct CompareNodeDist {
+    bool operator()(const std::pair<std::shared_ptr<Graph_Node>, double>& a, const std::pair<std::shared_ptr<Graph_Node>, double>& b) {
+        // sort based off of min distance
+        return a.second < b.second;
+    }
+};
+
+
 std::vector<std::shared_ptr<Graph_Node>> Tree::find_neighbors_within_radius(const std::vector<double>& target, double radius, int k_neighbors){
-    return kd_tree.find_k_nearest_neighbors(kd_tree.root, target, k_neighbors, radius);
+    std::priority_queue<std::pair<std::shared_ptr<Graph_Node>, double>, std::vector<std::pair<std::shared_ptr<Graph_Node>, double>>, CompareNodeDist> node_dist_queue;
+    for(auto& value : list)
+    {
+        double neighbor_dist = config_distance(target, value.second->config);
+        if(neighbor_dist < radius)
+        {
+            node_dist_queue.push(std::make_pair(value.second, neighbor_dist));
+        }
+    }
+
+    std::vector<std::shared_ptr<Graph_Node>> nearest_neighbors;
+    for(int idx = 0; idx < k_neighbors; ++idx)
+    {
+        //check to see if node dist queue is empty or not
+        if(!node_dist_queue.empty())
+        {
+            std::pair<std::shared_ptr<Graph_Node>, double> radius_neighbor = node_dist_queue.top();
+            node_dist_queue.pop();
+
+            nearest_neighbors.push_back(radius_neighbor.first);
+        }
+    }
+    return nearest_neighbors;
 };
 
 int Tree::get_current_index(){
