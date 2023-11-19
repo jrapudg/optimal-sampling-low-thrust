@@ -117,7 +117,7 @@ class RRT_Star_Planner{
 		Extent_State connect(std::vector<double>& config);
 		Extent_State extend_to_goal(std::vector<double>& target_config);
 		void compute_path(std::shared_ptr<Graph_Node> node);
-		Extent_State extend_with_rewiring(Tree& current_tree, std::vector<double>& q_rand);
+		std::vector<double> SteerTowards(Tree& tree, std::vector<double>& sample_state, std::shared_ptr<Graph_Node>& nearest_node);
 		void _get_q_new(std::vector<double>& q_near, std::vector<double>& q_rand, std::vector<double>& q_new, double step_size);
 
 

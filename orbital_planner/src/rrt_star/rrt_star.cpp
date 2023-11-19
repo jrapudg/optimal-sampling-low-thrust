@@ -1,88 +1,6 @@
 #include "rrt_star.hpp"
 
 // Methods
-void RRT_Star_Planner::FindPath(std::vector<double>& start_state, std::vector<double>& goal_state){
-    auto start = std::chrono::high_resolution_clock::now();
-    std::vector<double> sample_state(start_state.size());
-    if (DEBUG_USR){
-        std::cout << "Start sampling .. " << std::endl;
-    }
-
-    for (int i = 0; i < RRT_STAR_NUM_ITER; i++) { 
-        //_sample_random_config(q_rand);
-        SampleConfiguration(sample_state, goal_state, path_found);
-
-        if (path_found & RRT_STAR_NODE_REJECTION_ACTIVE){
-            double cost_to_goal = config_distance(sample_state, goal_node->config);
-            double cost_to_start = config_distance(sample_state, start_node->config); 
-            if (cost_to_goal + cost_to_start > goal_node->g){
-                //std::cout << "Sample rejected " << i << std::endl;
-                continue;
-            }
-        }
-        Extent_State state = extend_with_rewiring(tree, sample_state);
-
-        if (state == Extent_State::Trapped){
-            continue;
-        }
-
-        if(path_found){
-            if (state != Extent_State::Trapped){
-                update_count++;
-                if (update_count == 5){
-                    compute_path(goal_node);
-                    update_count = 0;
-                }
-            }
-        }
-
-        if (!path_found & are_configs_close(q_new_node->config, goal_config, RRT_STAR_GOAL_TOL)){
-            if (_can_connect(q_new_node->config, goal_config, RRT_STAR_GOAL_CONNECT)){
-                std::cout << "Goal Node Reached!" << std::endl;
-                std::cout << "Num Samples: "<< i + 1 << std::endl;
-                auto state = connect(goal_config);
-                if (state == Extent_State::Reached){
-                    goal_node = q_new_node;
-                    std::cout << "GOAL COST: " << goal_node->g << std::endl;
-                    compute_path(goal_node);
-                    std::cout << "GOAL COST: " << goal_node->g << std::endl;
-                    std::cout << "PATH SIZE: " << path.size() << std::endl;
-                    path_found = true;
-                    std::cout << "RESULT -> SOLUTION FOUND!" << std::endl;
-                    auto end = std::chrono::high_resolution_clock::now();
-                    auto time_elapsed_milli = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-                    std::cout << "TIME: " << (double) time_elapsed_milli/1000 << std::endl;
-                    std::cout << "Graph Nodes Before Refinement: " << tree.list.size() << std::endl;
-                    if (!RRT_STAR_LOCAL_BIAS_ACTIVE & !RRT_STAR_NODE_REJECTION_ACTIVE & !RRT_STAR_KEEP_UNTIL_TIME_MAX){
-                        std::cout << "NO REFINEMENT ACTIVE" << std::endl;
-                        return;
-                    }
-                    std::cout << "Refining path ..." << std::endl;
-                }
-            }
-        }
-
-        auto end = std::chrono::high_resolution_clock::now();
-        auto time_elapsed_milli = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-        if (path_found){
-            //if (time_elapsed_milli % 100 == 0){
-            //	std::cout << goal_node->g << std::endl;
-            //}
-            if (time_elapsed_milli >= RRT_STAR_REF_MAX){
-                std::cout << "TIME IS OVER! " << std::endl;
-                std::cout << "Refinement DONE! " << std::endl;
-                compute_path(goal_node);
-                std::cout << "NEW GOAL COST: " << goal_node->g << std::endl;
-                return;
-            }
-        }
-        
-        if (time_elapsed_milli >= RRT_STAR_TIME_MAX){
-            std::cout << "TIME IS OVER! " << std::endl;
-            return;
-        }
-    }
-};
 
 bool RRT_Star_Planner::_can_connect(const std::vector<double>& alpha_config, const std::vector<double>& neighbor_config, int n_points){
     std::vector<std::vector<double>> interpolated_points = 
@@ -156,73 +74,6 @@ void RRT_Star_Planner::compute_path(std::shared_ptr<Graph_Node> node){
     *plan_length = path.size();
 };
 
-Extent_State RRT_Star_Planner::extend_with_rewiring(Tree& tree, std::vector<double>& sample_state){
-    std::vector<double> q_new(sample_state.size());
-    std::shared_ptr<Graph_Node> parent_node;
-    if (RRT_STAR_DEBUG_INTER){
-        std::cout << "New cost" << std::endl;
-    }
-
-    auto nearest_node = RRT_Star_Planner::FindNearestStateTo(tree, sample_state);
-    
-
-    if (RRT_STAR_DEBUG_INTER){
-        std::cout << "Got nearest neighbor" << std::endl;
-        std::cout << "Nearest config ";
-        print_config(nearest_node->config);
-
-        std::cout << "Q rand config ";
-        print_config(sample_state);
-    }
-    _get_q_new(nearest_node->config, sample_state, q_new, RRT_STAR_STEP_EXTEND);
-
-    if (RRT_STAR_DEBUG_INTER){
-        std::cout << "Got new sample q new" << std::endl;
-    }
-
-    if (!are_configs_equal(nearest_node->config, q_new)){
-        double new_cost = get_cost(nearest_node->config, q_new);
-        q_new_node = CreateTreeNode(tree, q_new);
-        q_new_node->g = new_cost;
-
-        if (RRT_STAR_DEBUG_REWIRING){
-            std::cout << "New node ";
-            print_config(q_new_node->config);
-        }
-
-        parent_node = nearest_node;
-        if (RRT_STAR_DEBUG_REWIRING){
-            std::cout << "Nearest node ";
-            print_config(nearest_node->config);
-        }
-
-        auto near_nodes = FindNearestStates(tree, q_new);
-        ChooseParent(tree, q_new_node, parent_node, near_nodes);
-        AddToTree(tree, q_new_node, parent_node);
-
-        if (RRT_STAR_DEBUG_REWIRING){
-            std::cout << "Min node ";
-            print_config(parent_node->config);
-            std::cout << std::endl;
-        }
-
-        Rewire(tree, q_new_node, parent_node, near_nodes);
-
-        if (are_configs_equal(sample_state, q_new)){
-            //std::cout << "Reached!" << std::endl;
-            return Extent_State::Reached;
-        }
-        else{
-            //std::cout << "Advanced!" << std::endl;
-            return Extent_State::Advanced;
-        }
-    }
-    else{
-        //std::cout << "Trapped!" << std::endl;
-        return Extent_State::Trapped;
-    }
-};
-
 void RRT_Star_Planner::_get_q_new(std::vector<double>& q_near, std::vector<double>& q_rand, std::vector<double>& q_new, double step_size){
     std::vector<std::vector<double>> interpolated_points = 
             generate_epsilon_interpolation(q_near, q_rand, RRT_STAR_INTER_POINTS, step_size);
@@ -239,13 +90,168 @@ void RRT_Star_Planner::_get_q_new(std::vector<double>& q_near, std::vector<doubl
             break;
         }
     }
+
     for (int i=0; i<DOF; i++){
         q_new[i] = interpolated_points[new_index][i];
     }
 };
 
-
 // *********************** REFACTORING BELOW ********************** //
+void RRT_Star_Planner::FindPath(std::vector<double>& start_state, std::vector<double>& goal_state){
+    auto start = std::chrono::high_resolution_clock::now();
+    std::vector<double> state_rand(start_state.size());
+    std::shared_ptr<Graph_Node> parent_node;
+    Extent_State ext_state;
+
+    if (DEBUG_USR){
+        std::cout << "Start sampling .. " << std::endl;
+    }
+
+    for (int i = 0; i < RRT_STAR_NUM_ITER; i++) { 
+        // Sample function
+        SampleConfiguration(state_rand, goal_state, path_found);
+
+        // Add node rejection latter
+        /*
+        if (path_found & RRT_STAR_NODE_REJECTION_ACTIVE){
+            double cost_to_goal = config_distance(sample_state, goal_node->config);
+            double cost_to_start = config_distance(sample_state, start_node->config); 
+            if (cost_to_goal + cost_to_start > goal_node->g){
+                //std::cout << "Sample rejected " << i << std::endl;
+                continue;
+            }
+        }
+        */
+        auto nearest_node = RRT_Star_Planner::FindNearestStateTo(tree, state_rand);
+
+        auto new_state = SteerTowards(tree, state_rand, nearest_node);
+
+        if (!are_configs_equal(nearest_node->config, new_state)){
+            double new_cost = get_cost(nearest_node->config, new_state);
+            q_new_node = CreateTreeNode(tree, new_state);
+            q_new_node->g = new_cost;
+
+            if (RRT_STAR_DEBUG_REWIRING){
+                std::cout << "New node ";
+                print_config(q_new_node->config);
+            }
+
+            parent_node = nearest_node;
+            if (RRT_STAR_DEBUG_REWIRING){
+                std::cout << "Nearest node ";
+                print_config(nearest_node->config);
+            }
+
+            auto near_nodes = FindNearestStates(tree, new_state);
+            ChooseParent(tree, q_new_node, parent_node, near_nodes);
+            AddToTree(tree, q_new_node, parent_node);
+
+            if (RRT_STAR_DEBUG_REWIRING){
+                std::cout << "Min node ";
+                print_config(parent_node->config);
+                std::cout << std::endl;
+            }
+
+            Rewire(tree, q_new_node, parent_node, near_nodes);
+
+            if (are_configs_equal(state_rand, new_state)){
+                    //std::cout << "Reached!" << std::endl;
+                    ext_state =  Extent_State::Reached;
+                }
+                else{
+                    //std::cout << "Advanced!" << std::endl;
+                    ext_state = Extent_State::Advanced;
+                }
+            }
+            else{
+                //std::cout << "Trapped!" << std::endl;
+                ext_state = Extent_State::Trapped;
+            }
+
+        if (ext_state == Extent_State::Trapped){
+            continue;
+        }
+
+        if(path_found){
+            if (ext_state != Extent_State::Trapped){
+                update_count++;
+                if (update_count == 5){
+                    compute_path(goal_node);
+                    update_count = 0;
+                }
+            }
+        }
+
+        if (!path_found & are_configs_close(q_new_node->config, goal_config, RRT_STAR_GOAL_TOL)){
+            if (_can_connect(q_new_node->config, goal_config, RRT_STAR_GOAL_CONNECT)){
+                std::cout << "Goal Node Reached!" << std::endl;
+                std::cout << "Num Samples: "<< i + 1 << std::endl;
+                auto state = connect(goal_config);
+                if (state == Extent_State::Reached){
+                    goal_node = q_new_node;
+                    std::cout << "GOAL COST: " << goal_node->g << std::endl;
+                    compute_path(goal_node);
+                    std::cout << "GOAL COST: " << goal_node->g << std::endl;
+                    std::cout << "PATH SIZE: " << path.size() << std::endl;
+                    path_found = true;
+                    std::cout << "RESULT -> SOLUTION FOUND!" << std::endl;
+                    auto end = std::chrono::high_resolution_clock::now();
+                    auto time_elapsed_milli = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+                    std::cout << "TIME: " << (double) time_elapsed_milli/1000 << std::endl;
+                    std::cout << "Graph Nodes Before Refinement: " << tree.list.size() << std::endl;
+                    if (!RRT_STAR_LOCAL_BIAS_ACTIVE & !RRT_STAR_NODE_REJECTION_ACTIVE & !RRT_STAR_KEEP_UNTIL_TIME_MAX){
+                        std::cout << "NO REFINEMENT ACTIVE" << std::endl;
+                        return;
+                    }
+                    std::cout << "Refining path ..." << std::endl;
+                }
+            }
+        }
+
+        auto end = std::chrono::high_resolution_clock::now();
+        auto time_elapsed_milli = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+        if (path_found){
+            //if (time_elapsed_milli % 100 == 0){
+            //	std::cout << goal_node->g << std::endl;
+            //}
+            if (time_elapsed_milli >= RRT_STAR_REF_MAX){
+                std::cout << "TIME IS OVER! " << std::endl;
+                std::cout << "Refinement DONE! " << std::endl;
+                compute_path(goal_node);
+                std::cout << "NEW GOAL COST: " << goal_node->g << std::endl;
+                return;
+            }
+        }
+        
+        if (time_elapsed_milli >= RRT_STAR_TIME_MAX){
+            std::cout << "TIME IS OVER! " << std::endl;
+            return;
+        }
+    }
+};
+
+std::vector<double> RRT_Star_Planner::SteerTowards(Tree& tree, std::vector<double>& sample_state, std::shared_ptr<Graph_Node>& nearest_node){
+    std::vector<double> q_new(sample_state.size());
+    if (RRT_STAR_DEBUG_INTER){
+        std::cout << "New cost" << std::endl;
+    }
+
+    if (RRT_STAR_DEBUG_INTER){
+        std::cout << "Got nearest neighbor" << std::endl;
+        std::cout << "Nearest config ";
+        print_config(nearest_node->config);
+
+        std::cout << "Q rand config ";
+        print_config(sample_state);
+    }
+    _get_q_new(nearest_node->config, sample_state, q_new, RRT_STAR_STEP_EXTEND);
+
+    if (RRT_STAR_DEBUG_INTER){
+        std::cout << "Got new sample q new" << std::endl;
+    }
+    return q_new;
+};
+
 void RRT_Star_Planner::Rewire(Tree& tree, std::shared_ptr<Graph_Node>& new_state_node, std::shared_ptr<Graph_Node>& parent_node, std::vector<std::shared_ptr<Graph_Node>>& near_nodes){
     for (auto& near_node : near_nodes){
         if ((near_node != new_state_node) & (near_node != parent_node) & (_can_connect(near_node->config, new_state_node->config, RRT_STAR_INTER_POINTS))
@@ -329,7 +335,6 @@ void RRT_Star_Planner::SampleConfiguration(std::vector<double>& sample_state, st
         _sample_random_config(sample_state);
     }
 };
-
 
 // Utils Methods
 void RRT_Star_Planner::_sample_goal_biased_config(std::vector<double>& sample_state, std::vector<double>& goal_state){
