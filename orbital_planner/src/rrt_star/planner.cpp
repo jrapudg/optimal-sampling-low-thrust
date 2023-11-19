@@ -36,7 +36,7 @@ static void plannerRRTStar(
 														 plan, planlength);
 
 	std::cout << "----BUILDING TREE----" << std::endl;
-	planner_rrt_star.FindPath();
+	planner_rrt_star.FindPath(armstart_anglesV_rad_vec, armgoal_anglesV_rad_vec);
 	std::cout << "Graph Nodes: " << planner_rrt_star.tree.list.size() << std::endl;
 	if (!planner_rrt_star.path_found){
 		std::cout << "RESULT -> PATH NOT FOUND WITH RRT-STAR" << std::endl;

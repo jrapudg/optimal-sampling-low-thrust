@@ -96,6 +96,7 @@ int IsValidArmConfiguration(std::vector<double>& angles, double* map,
 //                                          HELPER FUNCTIONS                                                         //
 //                                                                                                                   //
 //*******************************************************************************************************************//
+double get_cost(const std::vector<double>& state, const std::vector<double>& control);
 
 double circular_distance(double angle1, double angle2);
 

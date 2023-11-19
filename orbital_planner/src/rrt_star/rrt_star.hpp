@@ -36,7 +36,7 @@
 #define RRT_STAR_NODE_REJECTION_ACTIVE true
 #define RRT_STAR_LOCAL_BIAS_ACTIVE true
 
-enum sample_state {
+enum Extent_State {
     Reached,
     Advanced,
     Trapped
@@ -90,19 +90,44 @@ class RRT_Star_Planner{
 		}
 
 		// Methods
-		void FindPath();
+		// Sample State 
+		void SampleConfiguration(std::vector<double>& sample_state, bool& path_found);
+		// Sample State Goal Biased
+		void SampleConfiguration(std::vector<double>& sample_state, std::vector<double>& goal_state, bool& path_found);
+		
+		// Find nearest states 
+		// Need to change distance function in kd_tree.cpp to LQR distance
+		std::shared_ptr<Graph_Node> FindNearestStateTo(Tree& tree, std::vector<double>& state);
+		std::vector<std::shared_ptr<Graph_Node>> FindNearestStates(Tree& tree, std::vector<double>& new_state);
+
+		// Check if the state is valid
+		bool ValidState(std::vector<double>& state);
+
+		// Tree methods
+		std::shared_ptr<Graph_Node> CreateTreeNode(Tree& tree, std::vector<double>& state);
+		void AddToTree(Tree& tree, std::shared_ptr<Graph_Node> state_node, std::shared_ptr<Graph_Node> parent_state_node);
+		
+		// Choose Parent
+		void ChooseParent(Tree& tree, std::shared_ptr<Graph_Node>& new_state_node, std::shared_ptr<Graph_Node>& parent_node, std::vector<std::shared_ptr<Graph_Node>>& near_nodes);
+
+		// Rewire function
+		void Rewire(Tree& tree, std::shared_ptr<Graph_Node>& new_state_node, std::shared_ptr<Graph_Node>& parent_node, std::vector<std::shared_ptr<Graph_Node>>& near_nodes);
+
 		bool _can_connect(const std::vector<double>& alpha_config, const std::vector<double>& neighbor_config, int n_points);
-		sample_state connect(std::vector<double>& config);
-		sample_state extend_to_goal(std::vector<double>& target_config);
+		Extent_State connect(std::vector<double>& config);
+		Extent_State extend_to_goal(std::vector<double>& target_config);
 		void compute_path(std::shared_ptr<Graph_Node> node);
-		sample_state extend_with_rewiring(Tree& current_tree, std::vector<double>& q_rand);
+		Extent_State extend_with_rewiring(Tree& current_tree, std::vector<double>& q_rand);
 		void _get_q_new(std::vector<double>& q_near, std::vector<double>& q_rand, std::vector<double>& q_new, double step_size);
 
+
+		void FindPath(std::vector<double>& start_state, std::vector<double>& goal_state);
+
+
 		// Utils Methods
-		void SampleConfiguration(std::vector<double>& config);
-		void _sample_goal_biased_config(std::vector<double>& config);
-		void _sample_local_biased_config(std::vector<double>& config);
-		void _sample_random_config(std::vector<double>& config);
+		void _sample_goal_biased_config(std::vector<double>& sample_state, std::vector<double>& goal_state);
+		void _sample_local_biased_config(std::vector<double>& sample_state);
+		void _sample_random_config(std::vector<double>& sample_state);
 };
 
 #endif // RRT_STAR_H

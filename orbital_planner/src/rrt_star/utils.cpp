@@ -218,21 +218,9 @@ int IsValidArmConfiguration(std::vector<double>& angles, double*	map,
 //                                          HELPER FUNCTIONS                                                         //
 //                                                                                                                   //
 //*******************************************************************************************************************//
-/*
-double circular_distance(double angle1, double angle2) {
-	// Function to calculate the circular distance between two angles in radians
-    double diff = fmod(angle2 - angle1 + 3.0 * M_PI, 2.0 * M_PI) - M_PI;
-    return fabs(diff);
+double get_cost(const std::vector<double>& state, const std::vector<double>& control){
+	return config_distance(state, control);
 };
-
-double config_distance(const double* a, const double* b, int DOF) {
-	double dist = 0;
-	for (size_t i = 0; i < DOF; ++i) {
-		dist += std::pow(circular_distance(a[i], b[i]), 2);
-	}
-	return std::sqrt(dist);
-};
-*/
 
 double circular_distance(double angle1, double angle2) {
 	// Function to calculate the circular distance between two angles in radians
