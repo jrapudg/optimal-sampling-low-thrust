@@ -129,7 +129,7 @@ void OrbitalSampler::SampleAroundOrbit(State6D_ECI current_state, State6D_ECI &s
 
 
 // Hard-coded 
-void OrbitalSampler::SampleCW(State6D current_state, State6D &sampled_state)
+void OrbitalSampler::SampleCW(State6D &sampled_state)
 {
     for (int i = 0; i < 3; ++i)
     {
