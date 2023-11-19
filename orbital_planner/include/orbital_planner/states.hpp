@@ -50,7 +50,7 @@ public:
     // Overload << to output the state
     friend std::ostream& operator<<(std::ostream& os, const State& state);
 
-    size_t GetSize() const;
+    size_t size() const;
 
 
 private:
