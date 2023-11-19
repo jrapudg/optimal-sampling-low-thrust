@@ -43,6 +43,8 @@ class OrbitalSampler
         // Sample within a given delta OE around the current orbit 
         void SampleAroundOrbit(State6D_ECI &sampled_eci_state);
 
+        void SampleCW(State6D &sampled_state);
+
 
     private:
 
