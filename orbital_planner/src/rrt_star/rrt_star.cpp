@@ -1,33 +1,33 @@
 #include "rrt_star.hpp"
 
 // Methods
-void RRT_Star_Planner::FindPath(){
+void RRT_Star_Planner::FindPath(std::vector<double>& start_state, std::vector<double>& goal_state){
     auto start = std::chrono::high_resolution_clock::now();
-    std::vector<double> q_rand(DOF);
+    std::vector<double> sample_state(start_state.size());
     if (DEBUG_USR){
         std::cout << "Start sampling .. " << std::endl;
     }
 
     for (int i = 0; i < RRT_STAR_NUM_ITER; i++) { 
         //_sample_random_config(q_rand);
-        SampleConfiguration(q_rand);
+        SampleConfiguration(sample_state, goal_state, path_found);
 
         if (path_found & RRT_STAR_NODE_REJECTION_ACTIVE){
-            double cost_to_goal = config_distance(q_rand, goal_node->config);
-            double cost_to_start = config_distance(q_rand, start_node->config); 
+            double cost_to_goal = config_distance(sample_state, goal_node->config);
+            double cost_to_start = config_distance(sample_state, start_node->config); 
             if (cost_to_goal + cost_to_start > goal_node->g){
                 //std::cout << "Sample rejected " << i << std::endl;
                 continue;
             }
         }
-        sample_state state = extend_with_rewiring(tree, q_rand);
+        Extent_State state = extend_with_rewiring(tree, sample_state);
 
-        if (state == sample_state::Trapped){
+        if (state == Extent_State::Trapped){
             continue;
         }
 
         if(path_found){
-            if (state != sample_state::Trapped){
+            if (state != Extent_State::Trapped){
                 update_count++;
                 if (update_count == 5){
                     compute_path(goal_node);
@@ -41,7 +41,7 @@ void RRT_Star_Planner::FindPath(){
                 std::cout << "Goal Node Reached!" << std::endl;
                 std::cout << "Num Samples: "<< i + 1 << std::endl;
                 auto state = connect(goal_config);
-                if (state == sample_state::Reached){
+                if (state == Extent_State::Reached){
                     goal_node = q_new_node;
                     std::cout << "GOAL COST: " << goal_node->g << std::endl;
                     compute_path(goal_node);
@@ -89,17 +89,16 @@ bool RRT_Star_Planner::_can_connect(const std::vector<double>& alpha_config, con
             generate_uniform_interpolation(alpha_config, neighbor_config, n_points);
 
     for (auto i_pts : interpolated_points){
-        if (!IsValidArmConfiguration(i_pts, map, x_size, y_size)){
+        if (!ValidState(i_pts)){
             return false;
         }
     }
     return true;
 };
 
-sample_state RRT_Star_Planner::connect(std::vector<double>& config){
-    sample_state state = sample_state::Advanced;
-    //connect_tree_b.last_node_connected = connect_tree_b.find_nearest_neighbor(q_new);
-    while(state == sample_state::Advanced){
+Extent_State RRT_Star_Planner::connect(std::vector<double>& config){
+    Extent_State state = Extent_State::Advanced;
+    while(state == Extent_State::Advanced){
         state = extend_to_goal(config);
         if (DEBUG_DEV){
             std::cout << "State: " << state << std::endl;
@@ -108,7 +107,7 @@ sample_state RRT_Star_Planner::connect(std::vector<double>& config){
     return state;
 };
 
-sample_state RRT_Star_Planner::extend_to_goal(std::vector<double>& target_config){
+Extent_State RRT_Star_Planner::extend_to_goal(std::vector<double>& target_config){
     std::vector<double> q_new(target_config.size());
     if (DEBUG_DEV){
         std::cout << "Get q_new" << std::endl;
@@ -116,18 +115,18 @@ sample_state RRT_Star_Planner::extend_to_goal(std::vector<double>& target_config
     _get_q_new(q_new_node->config, target_config, q_new, RRT_STAR_STEP_EXTEND_GOAL);
 
     if (!are_configs_equal(q_new_node->config, q_new)){
-        auto new_node = tree.add_vertex(q_new);
-        tree.add_edge(new_node, q_new_node);
+        auto new_node = CreateTreeNode(tree, q_new);
+        AddToTree(tree, new_node, q_new_node);
         q_new_node = new_node;
         if (are_configs_equal(target_config, q_new)){
-            return sample_state::Reached;
+            return Extent_State::Reached;
         }
         else{
-            return sample_state::Advanced;
+            return Extent_State::Advanced;
         }
     }
     else{
-        return sample_state::Trapped;
+        return Extent_State::Trapped;
     }
 };
 
@@ -157,14 +156,15 @@ void RRT_Star_Planner::compute_path(std::shared_ptr<Graph_Node> node){
     *plan_length = path.size();
 };
 
-sample_state RRT_Star_Planner::extend_with_rewiring(Tree& current_tree, std::vector<double>& q_rand){
-    std::vector<double> q_new(q_rand.size());
-    std::shared_ptr<Graph_Node> q_min_node;
+Extent_State RRT_Star_Planner::extend_with_rewiring(Tree& tree, std::vector<double>& sample_state){
+    std::vector<double> q_new(sample_state.size());
+    std::shared_ptr<Graph_Node> parent_node;
     if (RRT_STAR_DEBUG_INTER){
         std::cout << "New cost" << std::endl;
     }
 
-    auto nearest_node = current_tree.find_nearest_neighbor(q_rand);
+    auto nearest_node = RRT_Star_Planner::FindNearestStateTo(tree, sample_state);
+    
 
     if (RRT_STAR_DEBUG_INTER){
         std::cout << "Got nearest neighbor" << std::endl;
@@ -172,17 +172,17 @@ sample_state RRT_Star_Planner::extend_with_rewiring(Tree& current_tree, std::vec
         print_config(nearest_node->config);
 
         std::cout << "Q rand config ";
-        print_config(q_rand);
+        print_config(sample_state);
     }
-    _get_q_new(nearest_node->config, q_rand, q_new, RRT_STAR_STEP_EXTEND);
+    _get_q_new(nearest_node->config, sample_state, q_new, RRT_STAR_STEP_EXTEND);
 
     if (RRT_STAR_DEBUG_INTER){
         std::cout << "Got new sample q new" << std::endl;
     }
 
     if (!are_configs_equal(nearest_node->config, q_new)){
-        double new_cost = config_distance(nearest_node->config, q_new);
-        q_new_node = current_tree.add_vertex(q_new);
+        double new_cost = get_cost(nearest_node->config, q_new);
+        q_new_node = CreateTreeNode(tree, q_new);
         q_new_node->g = new_cost;
 
         if (RRT_STAR_DEBUG_REWIRING){
@@ -190,60 +190,36 @@ sample_state RRT_Star_Planner::extend_with_rewiring(Tree& current_tree, std::vec
             print_config(q_new_node->config);
         }
 
-        q_min_node = nearest_node;
+        parent_node = nearest_node;
         if (RRT_STAR_DEBUG_REWIRING){
             std::cout << "Nearest node ";
             print_config(nearest_node->config);
         }
 
-        auto near_alpha_nodes = tree.find_neighbors_within_radius(q_new, RRT_STAR_REW_RADIUS, RRT_STAR_K_NEIGHBORS);
-        for (auto& near_node : near_alpha_nodes){
-            if ((near_node != q_new_node) & _can_connect(near_node->config, q_new, RRT_STAR_INTER_POINTS)){
-                new_cost = near_node->g + config_distance(near_node->config, q_new);
-                if (new_cost < q_new_node->g){
-                    q_min_node = near_node;
-                    q_new_node->g = new_cost;
-                }
-            }
-        }
-        current_tree.add_edge(q_new_node, q_min_node);
+        auto near_nodes = FindNearestStates(tree, q_new);
+        ChooseParent(tree, q_new_node, parent_node, near_nodes);
+        AddToTree(tree, q_new_node, parent_node);
 
         if (RRT_STAR_DEBUG_REWIRING){
             std::cout << "Min node ";
-            print_config(q_min_node->config);
+            print_config(parent_node->config);
             std::cout << std::endl;
         }
 
-        for (auto& near_node : near_alpha_nodes){
-            if ((near_node != q_new_node) & (near_node != q_min_node) & (_can_connect(near_node->config, q_new, RRT_STAR_INTER_POINTS))
-                & (near_node->g > q_new_node->g + config_distance(q_new, near_node->config))){
-                
-                if (RRT_STAR_DEBUG_REWIRING){
-                    std::cout << "Rewiring ..." << std::endl;
-                    std::cout << "Cost near: " << near_node->g << " Cost new: " << q_new_node->g + config_distance(q_new, near_node->config) << std::endl;
-                    std::cout << "Parent ";
-                    print_config(q_new_node->config);
-                    std::cout << "Child near: ";
-                    print_config(near_node->config);
-                    std::cout << std::endl;
-                }
-                    near_node->parent = q_new_node;
-                    near_node->g = q_new_node->g + config_distance(q_new, near_node->config);
-            }
-        }
+        Rewire(tree, q_new_node, parent_node, near_nodes);
 
-        if (are_configs_equal(q_rand, q_new)){
+        if (are_configs_equal(sample_state, q_new)){
             //std::cout << "Reached!" << std::endl;
-            return sample_state::Reached;
+            return Extent_State::Reached;
         }
         else{
             //std::cout << "Advanced!" << std::endl;
-            return sample_state::Advanced;
+            return Extent_State::Advanced;
         }
     }
     else{
         //std::cout << "Trapped!" << std::endl;
-        return sample_state::Trapped;
+        return Extent_State::Trapped;
     }
 };
 
@@ -255,7 +231,7 @@ void RRT_Star_Planner::_get_q_new(std::vector<double>& q_near, std::vector<doubl
 
     for (int i=0; i<RRT_STAR_INTER_POINTS; i++){
         new_index = i;
-        if (!IsValidArmConfiguration(interpolated_points[i], map, x_size, y_size)){
+        if (!ValidState(interpolated_points[i])){
             if (DEBUG_DEV){
                 std::cout << "Invalid at " << i << std::endl;
             }
@@ -268,41 +244,113 @@ void RRT_Star_Planner::_get_q_new(std::vector<double>& q_near, std::vector<doubl
     }
 };
 
-// Utils Methods
-void RRT_Star_Planner::SampleConfiguration(std::vector<double>& config){
-    // Generate a random number between 0 and 1
-    double p_value = static_cast<double>(rand()) / RAND_MAX;
-    if ((p_value < RRT_STAR_GOAL_BIASED) & !path_found){
-        _sample_goal_biased_config(config);
-    }
-    else if (RRT_STAR_LOCAL_BIAS_ACTIVE & (p_value < RRT_STAR_LOCAL_BIASED) & path_found){
-        _sample_local_biased_config(config);
-    }
-    else{
-        _sample_random_config(config);
+
+// *********************** REFACTORING BELOW ********************** //
+void RRT_Star_Planner::Rewire(Tree& tree, std::shared_ptr<Graph_Node>& new_state_node, std::shared_ptr<Graph_Node>& parent_node, std::vector<std::shared_ptr<Graph_Node>>& near_nodes){
+    for (auto& near_node : near_nodes){
+        if ((near_node != new_state_node) & (near_node != parent_node) & (_can_connect(near_node->config, new_state_node->config, RRT_STAR_INTER_POINTS))
+            & (near_node->g > new_state_node->g + get_cost(new_state_node->config, near_node->config))){
+            
+            if (RRT_STAR_DEBUG_REWIRING){
+                std::cout << "Rewiring ..." << std::endl;
+                std::cout << "Cost near: " << near_node->g << " Cost new: " << new_state_node->g + get_cost(new_state_node->config, near_node->config) << std::endl;
+                std::cout << "Parent ";
+                print_config(new_state_node->config);
+                std::cout << "Child near: ";
+                print_config(near_node->config);
+                std::cout << std::endl;
+            }
+                near_node->parent = new_state_node;
+                near_node->g = new_state_node->g + get_cost(new_state_node->config, near_node->config);
+        }
     }
 };
 
+void RRT_Star_Planner::ChooseParent(Tree& tree, 
+                                    std::shared_ptr<Graph_Node>& new_state_node, 
+                                    std::shared_ptr<Graph_Node>& parent_node, 
+                                    std::vector<std::shared_ptr<Graph_Node>>& near_nodes){
+    double new_cost = new_state_node->g;
+    for (auto& near_node : near_nodes){
+        if ((near_node != q_new_node) & _can_connect(near_node->config, new_state_node->config, RRT_STAR_INTER_POINTS)){
+            new_cost = near_node->g + config_distance(near_node->config, new_state_node->config);
+            if (new_cost < q_new_node->g){
+                parent_node = near_node;
+                q_new_node->g = new_cost;
+            }
+        }
+    }
+};
+
+std::shared_ptr<Graph_Node> RRT_Star_Planner::CreateTreeNode(Tree& tree, std::vector<double>& state){
+    return tree.add_vertex(state);
+};
+
+void RRT_Star_Planner::AddToTree(Tree& tree, std::shared_ptr<Graph_Node> state_node, std::shared_ptr<Graph_Node> parent_state_node){
+    tree.add_edge(state_node, parent_state_node);
+};
+
+// Change function for our project. Ask space guys, what is a valid state?
+bool RRT_Star_Planner::ValidState(std::vector<double>& state){
+    return IsValidArmConfiguration(state, map, x_size, y_size);
+};
+
+// Change distance function in kd_tree.cpp for lqr cost-to-go -> KD_Tree::_distance(const std::vector<double>& a, const std::vector<double>& b)
+std::shared_ptr<Graph_Node> RRT_Star_Planner::FindNearestStateTo(Tree& tree, std::vector<double>& state){
+    return tree.find_nearest_neighbor(state);
+};
+
+std::vector<std::shared_ptr<Graph_Node>> RRT_Star_Planner::FindNearestStates(Tree& tree, std::vector<double>& new_state){
+    return tree.find_neighbors_within_radius(new_state, RRT_STAR_REW_RADIUS, RRT_STAR_K_NEIGHBORS);
+};
+
 // Utils Methods
-void RRT_Star_Planner::_sample_goal_biased_config(std::vector<double>& config){
+void RRT_Star_Planner::SampleConfiguration(std::vector<double>& sample_state, bool& path_found){
+    // Generate a random number between 0 and 1
+    double p_value = static_cast<double>(rand()) / RAND_MAX;
+    if (RRT_STAR_LOCAL_BIAS_ACTIVE & (p_value < RRT_STAR_LOCAL_BIASED) & path_found){
+        _sample_local_biased_config(sample_state);
+    }
+    else{
+        _sample_random_config(sample_state);
+    }
+};
+
+void RRT_Star_Planner::SampleConfiguration(std::vector<double>& sample_state, std::vector<double>& goal_state, bool& path_found){
+    // Generate a random number between 0 and 1
+    double p_value = static_cast<double>(rand()) / RAND_MAX;
+    if ((p_value < RRT_STAR_GOAL_BIASED) & !path_found){
+        _sample_goal_biased_config(sample_state, goal_state);
+    }
+    else if (RRT_STAR_LOCAL_BIAS_ACTIVE & (p_value < RRT_STAR_LOCAL_BIASED) & path_found){
+        _sample_local_biased_config(sample_state);
+    }
+    else{
+        _sample_random_config(sample_state);
+    }
+};
+
+
+// Utils Methods
+void RRT_Star_Planner::_sample_goal_biased_config(std::vector<double>& sample_state, std::vector<double>& goal_state){
     if(RRT_STAR_DEBUG_LOCAL){
         std::cout << "GOAL sampling ..." << std::endl;
     }
 
-    for (int i = 0; i < DOF; i++){ 
-        config[i] = goal_config[i] + distribution_rrt_star(gen);
+    for (int i = 0; i < goal_state.size(); i++){ 
+        sample_state[i] = goal_state[i] + distribution_rrt_star(gen);
     }
 }
 
 // Utils Methods
-void RRT_Star_Planner::_sample_local_biased_config(std::vector<double>& config){
+void RRT_Star_Planner::_sample_local_biased_config(std::vector<double>& sample_state){
     if(RRT_STAR_DEBUG_LOCAL){
         std::cout << "LOCAL sampling ..." << std::endl;
     }
     // Generate a random number between 0 and Tree size
     std::uniform_int_distribution<int> distribution_node(2, path.size()-1);
     int random_node_index = distribution_node(gen);
-    std::vector<double> q_tmp(config.size());
+    std::vector<double> q_tmp(sample_state.size());
     double q_tmp_norm;
 
     if(RRT_STAR_DEBUG_LOCAL){
@@ -339,21 +387,21 @@ void RRT_Star_Planner::_sample_local_biased_config(std::vector<double>& config){
     }
 
     for (int i=0; i < DOF; i++){
-        config[i] = q_node->config[i] + q_tmp[i]*distribution_local_bias(gen)/q_tmp_norm;
+        sample_state[i] = q_node->config[i] + q_tmp[i]*distribution_local_bias(gen)/q_tmp_norm;
     }
 
     if(RRT_STAR_DEBUG_LOCAL){
-        print_config(config);
+        print_config(sample_state);
         std::cout << "Local sampling DONE!" << std::endl;
     }
 };
 
-void RRT_Star_Planner::_sample_random_config(std::vector<double>& config){
+void RRT_Star_Planner::_sample_random_config(std::vector<double>& sample_state){
     if(RRT_STAR_DEBUG_LOCAL){
         std::cout << "RANDOM sampling ..." << std::endl;
     }
     
     for (int i = 0; i < DOF; i++){ 
-        config[i] = (double)rand() / RAND_MAX * MAX_ANGLE;
+        sample_state[i] = (double)rand() / RAND_MAX * MAX_ANGLE;
     }
 };

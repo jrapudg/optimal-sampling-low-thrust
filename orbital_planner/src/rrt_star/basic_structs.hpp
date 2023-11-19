@@ -21,8 +21,6 @@ struct Graph_Node {
     Graph_Node(int _i, const std::vector<double>& _config) : index(_i), config(_config) {
         // config is directly initialized using the initializer list
     }
-
-    // No need for a custom destructor as std::vector handles its own memory
 };
 
 // Initialization function for the Graph_Node struct
