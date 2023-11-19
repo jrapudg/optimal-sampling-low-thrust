@@ -122,6 +122,7 @@ Control LQR::ComputeOptimalPolicy(State current_state, Eigen::MatrixXd& B, Eigen
     return Control(u);
 }
 
+
 void Discretize(Eigen::MatrixXd& Ac, Eigen::MatrixXd& Bc, double dt, Eigen::MatrixXd& Ad, Eigen::MatrixXd& Bd)
 {
 
@@ -129,16 +130,16 @@ void Discretize(Eigen::MatrixXd& Ac, Eigen::MatrixXd& Bc, double dt, Eigen::Matr
     int nu = Bc.cols(); 
 
     // Create a combined matrix for A and B
-    Eigen::MatrixXd M = Eigen::MatrixXd::Zero(nx + nu, nx + nu);
-    M.topLeftCorner(nx, nx) = Ac * dt;
-    M.topRightCorner(nx, nu) = Bc * dt;
+    Eigen::MatrixXd Mat = Eigen::MatrixXd::Zero(nx + nu, nx + nu);
+    Mat.topLeftCorner(nx, nx) = Ac * dt;
+    Mat.topRightCorner(nx, nu) = Bc * dt;
 
     // Take the matrix exponential of M
-    M = M.exp();
+    Mat = Mat.exp();
 
     // Extract Ad and Bd from the matrix exponential of M
-    Ad = M.topLeftCorner(nx, nx);
-    Bd = M.topRightCorner(nx, nu);
+    Ad = Mat.topLeftCorner(nx, nx);
+    Bd = Mat.topRightCorner(nx, nu);
 
 }
 
