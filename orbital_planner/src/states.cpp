@@ -83,7 +83,7 @@ std::ostream& operator<<(std::ostream& os, const State& state) {
 }
 
 
-size_t State::GetSize() const
+size_t State::Size() const
 {
     return size;
 }
