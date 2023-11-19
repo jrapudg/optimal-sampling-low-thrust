@@ -112,8 +112,10 @@ void OrbitalSampler::SampleOrbit(std::string region, State6D_ECI &sampled_eci_st
     double mean_anom = Sample(0, 2 * M_PI); 
 
 
+    std::vector<double> orb_elem = {a, e, i, RAAN, arg_peri, mean_anom};
+
     // Create an instance of State6D_OE with the sampled elements
-    State6D_OE oe((std::vector<double>){a, e, i, RAAN, arg_peri, mean_anom});
+    State6D_OE oe(orb_elem);
 
     // Convert the orbital elements to an ECI state vector
     sampled_eci_state = OE2ECI(oe);
@@ -125,6 +127,12 @@ void OrbitalSampler::SampleAroundOrbit(State6D_ECI current_state, State6D_ECI &s
 
 }
 
+
+// Hard-coded 
+void OrbitalSampler::SampleCW(State6D current_state, State6D &sampled_state)
+{
+
+}
 
 
 

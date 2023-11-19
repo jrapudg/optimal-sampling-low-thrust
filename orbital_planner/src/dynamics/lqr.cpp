@@ -6,6 +6,7 @@
 #include <random>
 
 #include "lqr.hpp"
+#include "astrodynamics.hpp"
 #include <eigen3/unsupported/Eigen/MatrixFunctions>
 
 using namespace std::chrono;
@@ -99,7 +100,7 @@ Eigen::MatrixXd LQR::_SolveRicatti(Eigen::MatrixXd& A, Eigen::MatrixXd& B, doubl
 // Conversion to Eigen::VectorXd
 Eigen::VectorXd LQR::toEigen(State state)
 {
-    int size =state.GetSize();
+    int size =state.size();
     Eigen::VectorXd vec(size);
     for (size_t i = 0; i < size; ++i) {
         vec[i] = state[i];
@@ -121,7 +122,6 @@ Control LQR::ComputeOptimalPolicy(State current_state, Eigen::MatrixXd& B, Eigen
     Eigen::VectorXd u = R_LLT.solve(B.transpose() * S * toEigen(current_state));
     return Control(u);
 }
-
 
 void Discretize(Eigen::MatrixXd& Ac, Eigen::MatrixXd& Bc, double dt, Eigen::MatrixXd& Ad, Eigen::MatrixXd& Bd)
 {
@@ -165,7 +165,7 @@ void clohessy_wiltshire(Eigen::MatrixXd& A, Eigen::MatrixXd& B, double m=100.0)
         1, 0, 0,
         0, 1, 0, 
         0, 0, 1;
-    
+
 
 }
 
@@ -175,6 +175,18 @@ void clohessy_wiltshire(Eigen::MatrixXd& A, Eigen::MatrixXd& B, double m=100.0)
 {
     
     double dt = 0.1;
+    
+    // Double integrator discrete dynamics - zero-hold approx
+    Eigen::MatrixXd Ad(2, 2);
+    Eigen::MatrixXd Bd(2, 1);
+    Ad << 1, dt,
+          0, 1;
+    Bd << 0,
+          dt;
+
+    // Q and R
+    Eigen::MatrixXd Q = Eigen::MatrixXd::Identity(2, 2);
+    Eigen::MatrixXd R = Eigen::MatrixXd::Identity(1, 1);
 
     // Clohessy-Wiltshire 6D 
     
@@ -217,7 +229,6 @@ void clohessy_wiltshire(Eigen::MatrixXd& A, Eigen::MatrixXd& B, double m=100.0)
     std::cout << std::endl;
 
 
-    //State6D s_state({-1, -4, -5, 0.1, 0.2, 0.3});
     State6D s_state(d_start);
     State6D g_state;
 

@@ -55,7 +55,7 @@ public:
 
 private:
     std::vector<double> data;
-    std::size_t size;
+    std::size_t _size;
 
     // Helper function to convert Eigen::VectorXd to std::vector<double>
     std::vector<double> EigenToVector(const Eigen::VectorXd& eigen_vector);

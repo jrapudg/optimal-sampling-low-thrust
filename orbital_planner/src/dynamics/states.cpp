@@ -8,19 +8,19 @@
 
 // Constructor w/ vector
 State::State(std::vector<double>& initial_state) 
-: data(initial_state), size(initial_state.size()) {};
+: data(initial_state), _size(initial_state.size()) {};
 
 // Constructor initializing the vector with a size
 State::State(size_t size) 
-: data(size, 0.0), size(size) {};
+: data(size, 0.0), _size(size) {};
 
 // Copy constructor
 State::State(const State& other) 
-: data(other.data), size(other.size) {};
+: data(other.data), _size(other._size) {};
 
 // Constructor with initializer list
 State::State(std::initializer_list<double> initial_state) 
-: data(initial_state), size(initial_state.size()) {}
+: data(initial_state), _size(initial_state.size()) {}
 
 // Constructor initializing with an Eigen::VectorXd
 State::State(const Eigen::VectorXd& initial_state) 
@@ -37,8 +37,8 @@ const double& State::operator[](size_t index) const {
 }
 
 State State::operator*(double scalar) {
-        State result(size);
-        for (size_t i = 0; i < size; ++i) {
+        State result(_size);
+        for (size_t i = 0; i < _size; ++i) {
             result[i] = data[i] * scalar;
         }
         return result;
@@ -47,22 +47,22 @@ State State::operator*(double scalar) {
 
 
 State State::operator+(const State& other) const {
-    if (size != other.data.size()) {
+    if (_size != other.data.size()) {
         throw std::runtime_error("Vector sizes do not match for addition.");
     }
-    State result(size);
-    for (size_t i = 0; i < size; ++i) {
+    State result(_size);
+    for (size_t i = 0; i < _size; ++i) {
         result[i] = data[i] + other[i];
     }
     return result;
 }
 
 State State::operator-(const State& other) const {
-    if (size != other.data.size()) {
+    if (_size != other.data.size()) {
         throw std::runtime_error("Vector sizes do not match for substraction.");
     }
-    State result(size);
-    for (size_t i = 0; i < size; ++i) {
+    State result(_size);
+    for (size_t i = 0; i < _size; ++i) {
         result[i] = data[i] - other[i];
     }
     return result;
@@ -72,9 +72,9 @@ State State::operator-(const State& other) const {
 // Define the << operator outside the class
 std::ostream& operator<<(std::ostream& os, const State& state) {
     os << "[";
-    for (size_t i = 0; i < state.size; ++i) {
+    for (size_t i = 0; i < state._size; ++i) {
         os << state.data[i];
-        if (i < state.size - 1) {
+        if (i < state._size - 1) {
             os << ", ";
         }
     }
@@ -85,7 +85,7 @@ std::ostream& operator<<(std::ostream& os, const State& state) {
 
 size_t State::size() const
 {
-    return size;
+    return _size;
 }
 
 
