@@ -121,8 +121,11 @@ public:
 
     // TODO same with initializer_list 
 
+    // Static to be used throughout the codebase
+    static void CheckOE(std::vector<double>& orbital_elements);
+    
 private:
-    void CheckOE(std::vector<double>& orbital_elements);
+    
 };
 
 

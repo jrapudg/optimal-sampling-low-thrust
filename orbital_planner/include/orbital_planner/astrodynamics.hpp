@@ -57,6 +57,8 @@ class OrbitalSampler
         // Sample a value between min and max
         double Sample(double min, double max);
 
+
+
 };
 
 

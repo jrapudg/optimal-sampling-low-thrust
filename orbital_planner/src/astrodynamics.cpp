@@ -47,16 +47,39 @@ double OrbitalSampler::Sample(double min, double max) {
 }
 
 
+/*
+    Orbital element vector order:
+    1. a, Semi-major axis [m]
+    2. e, Eccentricity [dimensionless]
+    3. i, Inclination [rad]
+    4. w, Right Ascension of the Ascending Node (RAAN) [rad]
+    5. w, Argument of Perigee [ramd]
+    6. t, Mean anomaly [rad]
+*/
+
+void OrbitalSampler::SampleOrbit(State6D_OE orb_elem_min, State6D_OE orb_elem_max, State6D_ECI &sampled_eci_state)
+{
+    
+    std::vector<double> orbital_elements;
+
+    for (int i = 0; i < 6; ++i)
+    {
+        orbital_elements.push_back(Sample(orb_elem_min[i], orb_elem_max[i]));
+    }
+
+    State6D_OE oe(orbital_elements);
+
+    sampled_eci_state = OE2ECI(oe);
+
+}
 
 void OrbitalSampler::SampleOrbit(State6D_OE orb_elem_min, State6D_OE orb_elem_max, State4D_ECI &sampled_eci_state)
 {
 
+    // Reuse the 6D version
 }
 
-void OrbitalSampler::SampleOrbit(State6D_OE orb_elem_min, State6D_OE orb_elem_max, State6D_ECI &sampled_eci_state)
-{
 
-}
 
 void OrbitalSampler::SampleOrbit(std::string region, State6D_ECI &sampled_eci_state)
 {
@@ -67,6 +90,7 @@ void OrbitalSampler::SampleAroundOrbit(State6D_ECI current_state, State6D_ECI &s
 {
 
 }
+
 
 
 
