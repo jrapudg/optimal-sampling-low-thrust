@@ -1,4 +1,6 @@
 #include <string>
+
+#include <random>
 #include "states.hpp"
 
 
@@ -17,10 +19,45 @@ TODO
 - Docs for each function 
 - Implement scaled dynamics
 - Implement CR3BP
-- Implement orbital elements samplers
+- Implement all sampler fct from the OrbitalSampler class
 
 
 */
+
+
+// Orbit sampling
+
+class OrbitalSampler
+{
+    public:
+
+        OrbitalSampler(int seed = 0);
+
+        void SampleOrbit(State6D_OE orb_elem_min, State6D_OE orb_elem_max, State4D_ECI &sampled_eci_state);
+
+        void SampleOrbit(State6D_OE orb_elem_min, State6D_OE orb_elem_max, State6D_ECI &sampled_eci_state);
+
+        // TODO will just use above
+        void SampleOrbit(std::string region, State6D_ECI &sampled_eci_state);
+
+        // Sample within a given delta OE around the current orbit 
+        void SampleAroundOrbit(State6D_ECI current_state, State6D_ECI &sampled_eci_state);
+
+
+    private:
+
+        std::mt19937 rng; 
+        std::uniform_real_distribution<double> angle_dis;
+        std::uniform_real_distribution<double> uniform_dis;
+        std::normal_distribution<double> gaussian_dis;
+
+        // Linearly interpolate between two values
+        double Lerp(double min, double max, double t);
+
+        // Sample a value between min and max
+        double Sample(double min, double max);
+
+};
 
 
 // Dynamics function 
@@ -38,18 +75,7 @@ void CentralBodyScaled(State6D_ECI state, Control3D control, State6D_ECI& state_
 void CR3BP(State6D state, Control3D control, State6D& state_dot);
 
 
-// Helpers 
 
-void SampleOrbit(State6D_OE orb_elem_min, State6D_OE orb_elem_max, State4D_ECI &sampled_eci_state);
-
-void SampleOrbit(State6D_OE orb_elem_min, State6D_OE orb_elem_max, State6D_ECI &sampled_eci_state);
-
-// TODO will just use above
-void SampleOrbit(std::string region, State6D_ECI &sampled_eci_state);
-
-
-// Sample within a given delta OE around the current orbit 
-void SampleAroundOrbit(State6D_ECI current_state, State6D_ECI &sampled_eci_state);
 
 State6D_ECI OE2ECI(State6D_OE orbital_elements);
 

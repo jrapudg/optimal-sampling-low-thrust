@@ -1,8 +1,73 @@
+
 #include "astrodynamics.hpp"
+
 
 
 namespace Astrodynamics
 {
+
+
+OrbitalSampler::OrbitalSampler(int seed)
+{
+    // From hardware
+    std::random_device rd;
+
+    if (seed == 0)
+    {
+        rng = std::mt19937(rd());
+    } else 
+    {
+        rng = std::mt19937(seed);
+    }
+
+    // Uniform distribution for angles
+    angle_dis = std::uniform_real_distribution<double>(0, 2 * M_PI);
+
+    // Uniform distribution 
+    uniform_dis = std::uniform_real_distribution<double>(0, 1.0);
+
+
+    // Gaussian
+    gaussian_dis = std::normal_distribution<double>(0, 1);
+}
+
+
+
+
+
+double OrbitalSampler::Lerp(double min, double max, double t) {
+    return min + t * (max - min);
+}
+
+// Sample a value between min and max
+double OrbitalSampler::Sample(double min, double max) {
+
+    // Use linear interpolation to get a value between min and max
+    return Lerp(min, max, uniform_dis(rng));
+}
+
+
+
+void OrbitalSampler::SampleOrbit(State6D_OE orb_elem_min, State6D_OE orb_elem_max, State4D_ECI &sampled_eci_state)
+{
+
+}
+
+void OrbitalSampler::SampleOrbit(State6D_OE orb_elem_min, State6D_OE orb_elem_max, State6D_ECI &sampled_eci_state)
+{
+
+}
+
+void OrbitalSampler::SampleOrbit(std::string region, State6D_ECI &sampled_eci_state)
+{
+
+}
+
+void OrbitalSampler::SampleAroundOrbit(State6D_ECI current_state, State6D_ECI &sampled_eci_state)
+{
+
+}
+
 
 
 void PlanarCentralBody(State4D_ECI x, Control2D u, State4D_ECI& next_state)
@@ -55,6 +120,10 @@ void ClohessyWiltshire(State6D x, Control3D u, State6D& next_state)
 }
 
 
+
+
+
+
 void PlanarCentralBodyScaled(State4D_ECI x, Control2D u, State4D_ECI& next_state)
 {
     // Update next_state based on scaled calculations
@@ -71,25 +140,7 @@ void CR3BP(State6D state, Control3D control, State6D& state_dot)
 }
 
 
-void SampleOrbit(State6D_OE orb_elem_min, State6D_OE orb_elem_max, State4D_ECI &sampled_eci_state)
-{
 
-}
-
-void SampleOrbit(State6D_OE orb_elem_min, State6D_OE orb_elem_max, State6D_ECI &sampled_eci_state)
-{
-
-}
-
-void SampleOrbit(std::string region, State6D_ECI &sampled_eci_state)
-{
-
-}
-
-void SampleAroundOrbit(State6D_ECI current_state, State6D_ECI &sampled_eci_state)
-{
-
-}
 
 
 State6D_ECI OE2ECI(State6D_OE orbital_elements)
