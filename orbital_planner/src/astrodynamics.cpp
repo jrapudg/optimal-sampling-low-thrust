@@ -33,6 +33,28 @@ void CentralBody(State6D_ECI x, Control3D u, State6D_ECI& next_state)
     }
 }
 
+// Assumes circular orbit and distance between two spacecraft is << distance to central body
+void ClohessyWiltshire(State6D x, Control3D u, State6D& next_state)
+{
+    // Velocity
+    for (int i = 0; i < 3; i++) {
+        next_state[i] = x[i + 3]; 
+    }
+
+    // Assume for now LEO - should be a parameter
+    double sma = LEO_MAX;
+    const double n = std::sqrt(3.986004418e14 / std::pow(sma, 3));
+
+
+    // Acceleration - // Control input is acceleration
+
+    next_state[3] = 3 * n * n * x[0] + 2 * n * x[4] + u[0]; 
+    next_state[4] = -2* n * x[3] + u[1];
+    next_state[5] = - n * n * x[2] + u[2];
+
+}
+
+
 void PlanarCentralBodyScaled(State4D_ECI x, Control2D u, State4D_ECI& next_state)
 {
     // Update next_state based on scaled calculations
