@@ -29,6 +29,8 @@ void PlanarCentralBody(State4D_ECI state, Control2D control, State4D_ECI& state_
 
 void CentralBody(State6D_ECI state, Control3D control, State6D_ECI& state_dot);
 
+void ClohessyWiltshire(State6D x, Control3D u, State6D& next_state);
+
 void PlanarCentralBodyScaled(State4D_ECI state, Control2D control, State4D_ECI& state_dot);
 
 void CentralBodyScaled(State6D_ECI state, Control3D control, State6D_ECI& state_dot);
