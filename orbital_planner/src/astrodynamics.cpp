@@ -52,7 +52,7 @@ double OrbitalSampler::Sample(double min, double max) {
     1. a, Semi-major axis [m]
     2. e, Eccentricity [dimensionless]
     3. i, Inclination [rad]
-    4. w, Right Ascension of the Ascending Node (RAAN) [rad]
+    4. RAAN, Right Ascension of the Ascending Node (RAAN) [rad]
     5. w, Argument of Perigee [ramd]
     6. t, Mean anomaly [rad]
 */
@@ -83,6 +83,40 @@ void OrbitalSampler::SampleOrbit(State6D_OE orb_elem_min, State6D_OE orb_elem_ma
 
 void OrbitalSampler::SampleOrbit(std::string region, State6D_ECI &sampled_eci_state)
 {
+    const double earth_radius_km = 6371.0;
+    double min_altitude_km, max_altitude_km;
+    
+    if (region == "LEO") {
+        min_altitude_km = LEO_MIN;
+        max_altitude_km = LEO_MAX;
+    } else if (region == "MEO") {
+        min_altitude_km = MEO_MIN;
+        max_altitude_km = MEO_MAX;
+    } else if (region == "GEO") {
+        min_altitude_km = GEO_MIN;
+        max_altitude_km = GEO_MAX;
+    } else {
+        throw std::invalid_argument("Unknown orbit region specified.");
+    }
+
+    // Convert altitudes to semi-major axis lengths by adding Earth's radius
+    double min_sma = (earth_radius_km + min_altitude_km) * 1000.0; // convert to meters
+    double max_sma = (earth_radius_km + max_altitude_km) * 1000.0; // convert to meters
+
+    // Sample the semi-major axis within the specified range
+    double a = Sample(min_sma, max_sma);
+    double e =Sample(0, 1.0); 
+    double i = Sample(0, M_PI); 
+    double RAAN = Sample(0, 2 * M_PI); 
+    double arg_peri = Sample(0, 2 * M_PI);
+    double mean_anom = Sample(0, 2 * M_PI); 
+
+
+    // Create an instance of State6D_OE with the sampled elements
+    State6D_OE oe((std::vector<double>){a, e, i, RAAN, arg_peri, mean_anom});
+
+    // Convert the orbital elements to an ECI state vector
+    sampled_eci_state = OE2ECI(oe);
 
 }
 
