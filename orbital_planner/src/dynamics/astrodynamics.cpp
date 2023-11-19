@@ -131,9 +131,17 @@ void OrbitalSampler::SampleAroundOrbit(State6D_ECI current_state, State6D_ECI &s
 // Hard-coded 
 void OrbitalSampler::SampleCW(State6D current_state, State6D &sampled_state)
 {
+    for (int i = 0; i < 3; ++i)
+    {
+        sampled_state[i] = Sample(- MAX_DIST_LVLH, MAX_DIST_LVLH);
+    }
+
+    for (int i = 3; i < 6; ++i)
+    {
+        sampled_state[i] = Sample(- MAX_VEL_LVLH, MAX_VEL_LVLH);
+    }
 
 }
-
 
 
 void PlanarCentralBody(State4D_ECI x, Control2D u, State4D_ECI& next_state)
