@@ -11,11 +11,8 @@
 
 #define MAX_ANGLE 2*M_PI
 #define RRT_STAR_NUM_ITER 1000000 //500000
-#define RRT_STAR_INTER_POINTS 15 //15
 #define RRT_STAR_STEP_EXTEND 1.0 //4.0
-#define RRT_STAR_STEP_EXTEND_GOAL 1.0
-#define RRT_STAR_GOAL_TOL 5.0 //2.0
-#define RRT_STAR_GOAL_CONNECT 100 // 50
+#define RRT_STAR_GOAL_TOL 2.0 //2.0
 
 #define RRT_STAR_DEBUG_REWIRING false
 #define RRT_STAR_DEBUG_LOCAL false
@@ -30,23 +27,15 @@
 #define RRT_STAR_R_MAX 0.5*RRT_STAR_STEP_EXTEND
 
 #define RRT_STAR_REW_RADIUS 10.0
-#define RRT_STAR_K_NEIGHBORS 8
+#define RRT_STAR_K_NEIGHBORS 10
 
 #define RRT_STAR_KEEP_UNTIL_TIME_MAX false
 #define RRT_STAR_NODE_REJECTION_ACTIVE true
 #define RRT_STAR_LOCAL_BIAS_ACTIVE true
 
-enum Extent_State {
-    Reached,
-    Advanced,
-    Trapped
-};
-
 class RRT_Star_Planner{
 	public:
 		// Attributes
-		int x_size, y_size;
-		double* map;
 		std::vector<double> start_config;
 		std::vector<double> goal_config;
 		double ***plan;
@@ -71,12 +60,8 @@ class RRT_Star_Planner{
 
 		// Constructor
 		RRT_Star_Planner(std::vector<double>& armstart_anglesV_rad, std::vector<double>& armgoal_anglesV_rad, 
-						 int _DOF, double* _map, int _x_size, int _y_size, 
-						 double ***_plan, int *_plan_length){
+						 int _DOF, double ***_plan, int *_plan_length){
 			DOF = _DOF;
-			map = _map;
-			x_size = _x_size;
-			y_size = _y_size;
 			tree = Tree(armstart_anglesV_rad);
 			start_config = armstart_anglesV_rad;
 			goal_config = armgoal_anglesV_rad;
@@ -113,13 +98,8 @@ class RRT_Star_Planner{
 		// Rewire function
 		void Rewire(Tree& tree, std::shared_ptr<Graph_Node>& new_state_node, std::shared_ptr<Graph_Node>& parent_node, std::vector<std::shared_ptr<Graph_Node>>& near_nodes);
 
-		bool _can_connect(const std::vector<double>& alpha_config, const std::vector<double>& neighbor_config, int n_points);
-		Extent_State connect(std::vector<double>& config);
-		Extent_State extend_to_goal(std::vector<double>& target_config);
-		void compute_path(std::shared_ptr<Graph_Node> node);
+		void ComputePath(std::shared_ptr<Graph_Node> node);
 		std::vector<double> SteerTowards(Tree& tree, std::vector<double>& sample_state, std::shared_ptr<Graph_Node>& nearest_node);
-		void _get_q_new(std::vector<double>& q_near, std::vector<double>& q_rand, std::vector<double>& q_new, double step_size);
-
 
 		void FindPath(std::vector<double>& start_state, std::vector<double>& goal_state);
 

@@ -9,7 +9,6 @@
 #include "rrt_star.hpp"
 #include "utils.hpp"
 
-
 #include <math.h>
 #include <random>
 #include <vector>

@@ -7,13 +7,11 @@
 class Tree {
 	public:
 		// Attributes
-		//KD_Tree kd_tree;
 		std::unordered_map<int, std::shared_ptr<Graph_Node>> list;
 		std::shared_ptr<Graph_Node> last_node_connected;
 
 		// Constructors
 		Tree(const std::vector<double>& init_config) {
-			//kd_tree = KD_Tree();
 			add_vertex(init_config);
 		}
 
