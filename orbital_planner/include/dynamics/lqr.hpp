@@ -25,7 +25,7 @@ class LQR
         Control ComputeOptimalPolicy(State current_state, Eigen::MatrixXd& B, Eigen::MatrixXd& S);
 
 
-
+        Eigen::VectorXd toEigen(State state);
 
 
 
@@ -38,7 +38,7 @@ class LQR
 
 
         Eigen::MatrixXd _SolveRicatti(Eigen::MatrixXd& A, Eigen::MatrixXd& B, double tol=1e-10);
-        Eigen::VectorXd toEigen(State state);
+        
 
 
 
