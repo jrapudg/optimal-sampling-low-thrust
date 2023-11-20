@@ -18,7 +18,7 @@ void Simulator::Step(State state, Control control, State &next_state)
 
 void Simulator::RK4(State state, Control control, State &next_state)
 {
-    size_t sz = state.GetSize();
+    size_t sz = state.size();
     State k1(sz), k2(sz), k3(sz), k4(sz);
 
     Dynamics(state, control, k1);
