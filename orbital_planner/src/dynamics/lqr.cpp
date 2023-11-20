@@ -98,9 +98,9 @@ Eigen::MatrixXd LQR::_SolveRicatti(Eigen::MatrixXd& A, Eigen::MatrixXd& B, doubl
 
 
 // Conversion to Eigen::VectorXd
-Eigen::VectorXd LQR::toEigen(State state)
+Eigen::VectorXd LQR::toEigen(State _state)
 {
-    int size =state.size();
+    int size = _state.size();
     Eigen::VectorXd vec(size);
     for (size_t i = 0; i < size; ++i) {
         vec[i] = state[i];
