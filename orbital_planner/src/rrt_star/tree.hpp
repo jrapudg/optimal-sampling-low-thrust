@@ -1,19 +1,19 @@
 #ifndef TREE_H
 #define TREE_H
 
-#include "kd_tree.hpp"
 #include "basic_structs.hpp"
+#include "utils.hpp"
 
 class Tree {
 	public:
 		// Attributes
-		KD_Tree kd_tree;
+		//KD_Tree kd_tree;
 		std::unordered_map<int, std::shared_ptr<Graph_Node>> list;
 		std::shared_ptr<Graph_Node> last_node_connected;
 
 		// Constructors
 		Tree(const std::vector<double>& init_config) {
-			kd_tree = KD_Tree();
+			//kd_tree = KD_Tree();
 			add_vertex(init_config);
 		}
 

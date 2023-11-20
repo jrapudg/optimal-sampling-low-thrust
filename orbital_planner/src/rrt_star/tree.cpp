@@ -4,7 +4,7 @@
 std::shared_ptr<Graph_Node> Tree::add_vertex(const std::vector<double>& config){
     auto node = create_graph_node(current_index, config);
     list[current_index] = node;
-    kd_tree.insert(kd_tree.root, node, 0);
+    //kd_tree.insert(kd_tree.root, node, 0);
     current_index ++;
     return node;
 }

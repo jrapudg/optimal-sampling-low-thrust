@@ -96,6 +96,7 @@ void RRT_Star_Planner::_get_q_new(std::vector<double>& q_near, std::vector<doubl
     }
 };
 
+
 // *********************** REFACTORING BELOW ********************** //
 void RRT_Star_Planner::FindPath(std::vector<double>& start_state, std::vector<double>& goal_state){
     auto start = std::chrono::high_resolution_clock::now();
