@@ -16,22 +16,22 @@ std::vector<double> convertArrayToVector(const double* array, int size) {
 }
 
 static void plannerRRTStar(
-    double *armstart_anglesV_rad,
-    double *armgoal_anglesV_rad,
+    double *start_state,
+    double *goal_state,
     int numofDOFs,
     double ***plan,
     int *planlength)
 {	
-	std::vector<double> armstart_anglesV_rad_vec = convertArrayToVector(armstart_anglesV_rad, numofDOFs);
-	std::vector<double> armgoal_anglesV_rad_vec = convertArrayToVector(armgoal_anglesV_rad, numofDOFs);
+	std::vector<double> start_state_vec = convertArrayToVector(start_state, numofDOFs);
+	std::vector<double> goal_state_vec = convertArrayToVector(goal_state, numofDOFs);
 
     std::cout << std::endl << "******RRT-STAR PLANNER*****" << std::endl;
-	RRT_Star_Planner planner_rrt_star = RRT_Star_Planner(armstart_anglesV_rad_vec, 
-														 armgoal_anglesV_rad_vec, 
+	RRT_Star_Planner planner_rrt_star = RRT_Star_Planner(start_state_vec, 
+														 goal_state_vec, 
 														 numofDOFs, plan, planlength);
 
 	std::cout << "----BUILDING TREE----" << std::endl;
-	planner_rrt_star.FindPath(armstart_anglesV_rad_vec, armgoal_anglesV_rad_vec);
+	planner_rrt_star.FindPath(start_state_vec, goal_state_vec);
 	std::cout << "Graph Nodes: " << planner_rrt_star.tree.list.size() << std::endl;
 	if (!planner_rrt_star.path_found){
 		std::cout << "RESULT -> PATH NOT FOUND WITH RRT-STAR" << std::endl;

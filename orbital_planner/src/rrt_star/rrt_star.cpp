@@ -115,7 +115,7 @@ void RRT_Star_Planner::FindPath(std::vector<double>& start_state, std::vector<do
         }
     }
 }
-
+ 
 std::vector<double> RRT_Star_Planner::SteerTowards(Tree& tree, std::vector<double>& sample_state, std::shared_ptr<Graph_Node>& nearest_node){
     std::vector<double> q_new(sample_state.size());
     
