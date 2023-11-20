@@ -122,7 +122,7 @@ void OrbitalSampler::SampleOrbit(std::string region, State6D_ECI &sampled_eci_st
 
 }
 
-void OrbitalSampler::SampleAroundOrbit(State6D_ECI current_state, State6D_ECI &sampled_eci_state)
+void OrbitalSampler::SampleAroundOrbit(State6D_ECI &sampled_eci_state)
 {
 
 }
