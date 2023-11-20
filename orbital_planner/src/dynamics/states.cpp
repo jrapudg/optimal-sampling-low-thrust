@@ -24,11 +24,11 @@ State::State(std::initializer_list<double> initial_state)
 
 // Constructor initializing with an Eigen::VectorXd
 State::State(const Eigen::VectorXd& initial_state) 
-: data(EigenToVector(initial_state)) {}
+: data(EigenToVector(initial_state), _size(initial_state.size())) {}
 
 void State::GetData(std::vector<double>& out)
 {
-    for (int i = 0; i <= _size; ++i)
+    for (int i = 0; i < _size; ++i)
     {
         out[i] = data[i];
     }
