@@ -26,6 +26,13 @@ State::State(std::initializer_list<double> initial_state)
 State::State(const Eigen::VectorXd& initial_state) 
 : data(EigenToVector(initial_state)) {}
 
+void State::GetData(std::vector<double>& out)
+{
+    for (int i = 0; i <= _size; ++i)
+    {
+        out[i] = data[i];
+    }
+}
 
 
 double& State::operator[](size_t index) {

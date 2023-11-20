@@ -52,6 +52,8 @@ public:
 
     size_t size() const;
 
+    void GetData(std::vector<double>& out);
+
 
 private:
     std::vector<double> data;
