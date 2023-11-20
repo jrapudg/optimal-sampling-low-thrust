@@ -13,6 +13,11 @@ namespace Astrodynamics
 #define M 5.9722e24
 
 
+// Maximum distance for sampling in LVLH frame (for CW equations)
+#define MAX_DIST_LVLH 20.0
+#define MAX_VEL_LVLH 2.0
+
+
 
 /*
 TODO 
@@ -87,4 +92,4 @@ State6D_OE ECI2OE(State6D_ECI eci_state);
 
 
 
-}
+}GetSize()
