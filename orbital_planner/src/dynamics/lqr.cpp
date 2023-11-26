@@ -271,45 +271,14 @@ int main()
 
     // Create an LQR instance and compute the cost matrix
     LQR lqr(Q, R);
-    auto start = high_resolution_clock::now();
-    /*MatrixS S;
-    lqr.ComputeCostMatrix(Ad, Bd, S); 
-    auto stop = high_resolution_clock::now();
-
-    auto duration = duration_cast<microseconds>(stop - start);
-
-    std::cout << "Computed Cost Matrix (S): \n" << S << std::endl;
-    std::cout << "Time taken by ricatti: " << duration.count() << " µs" << std::endl;
+    //auto start = high_resolution_clock::now();
+    //auto stop = high_resolution_clock::now();
+    //auto duration = duration_cast<microseconds>(stop - start);
 
 
-    std::random_device rd;
-    std::mt19937 rng = std::mt19937(rd());
-    State s_state;
-    std::uniform_real_distribution<double> dis = std::uniform_real_distribution<double>(-100, 100);
-    for (int i = 0; i < 6; ++i)
-    {
-        s_state[i] = dis(rng);
-    }
-    Print(s_state);
-
-    State g_state;
 
 
-    start = high_resolution_clock::now();
-    double v = lqr.ComputeCostToGo(s_state, g_state, S);
-    stop = high_resolution_clock::now();
-    duration = duration_cast<microseconds>(stop - start);
-    std::cout << "V(x) = " << v << std::endl;
-    std::cout << "Time taken by CostToGo: " << duration.count() << " µs" << std::endl;
-    
 
-
-    start = high_resolution_clock::now();
-    Control ustar = lqr.ComputeOptimalPolicy(s_state, Bd, S);
-    stop = high_resolution_clock::now();
-    duration = duration_cast<microseconds>(stop - start);
-    std::cout << "u* = " << ustar << std::endl;
-    std::cout << "Time taken by ComputeOptimalPolicy: " << duration.count() << " µs" << std::endl;*/
 
     Simulator sim(ClohessyWiltshire, dt);
     State starting_state = {5.0, 2.0, -1.0, -0.2, 0.0, -0.49};
