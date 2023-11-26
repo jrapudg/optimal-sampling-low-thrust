@@ -4,8 +4,9 @@
 #include <stdexcept>
 #include <cmath>
 #include <random>
+#include <unistd.h>
 
-#include "simulation.hpp"
+
 #include "lqr.hpp"
 
 
@@ -176,7 +177,65 @@ double LQR::QuadraticCost(State& state, Control& control)
 }
 
 
+double LQR::GetTrajectoryCost(State starting_state, State& goal_state, MatrixA& A, MatrixB& B, Simulation::Simulator& sim, double tol)
+{
 
+    Control control;
+
+    // Compute the Cost Matrix 
+    MatrixS S;
+    ComputeCostMatrix(A, B, S);
+    // Compute Optimal Gain
+    MatrixK K = ComputeOptimalGain(A, B, S);
+
+    // Initial state
+    State current_state = starting_state;
+    State next_state;
+
+    // Initial cost     
+    double J = 0;
+    control = K * current_state;
+    J += QuadraticCost(current_state, control);
+
+
+    while (true)
+    {
+        //std::cout << "-----------" << std::endl;
+        //std::cout << "Current state: \n" << current_state << std::endl;
+        // Optimal policy
+        control = - K * current_state;
+
+        //std::cout << "Control: \n" << control << std::endl;
+
+        sim.Step(current_state, control, next_state);
+        //next_state = A * current_state + B * control;
+
+        //std::cout << "Next state: " << next_state << std::endl;
+
+        J += QuadraticCost(next_state, control);
+
+        //std::cout << "Residual " << (current_state - goal_state).squaredNorm() << std::endl;
+
+        if ((current_state - goal_state).squaredNorm() <= tol)
+        {
+            break;
+        }
+        else
+        {
+            current_state = next_state;
+        }
+
+        //std::cout << "J --- " << J << std::endl;
+        //usleep(100000);
+
+
+    }
+
+    return J;
+
+
+
+}
 
 }
 
@@ -200,11 +259,11 @@ int main()
     MatrixB Bd(6,3);
     GetClohessyWiltshireMatrices(A, B);
 
-    std::cout << "A: \n" << A << std::endl;
-    std::cout << "B: \n" << B << std::endl;
+    //std::cout << "A: \n" << A << std::endl;
+    //std::cout << "B: \n" << B << std::endl;
     Simulator::Discretize(A, B, dt, Ad, Bd);
-    std::cout << "Ad: \n" << Ad << std::endl;
-    std::cout << "Bd: \n" << Bd << std::endl;
+    //std::cout << "Ad: \n" << Ad << std::endl;
+    //std::cout << "Bd: \n" << Bd << std::endl;
 
     MatrixQ Q = Eigen::MatrixXd::Identity(6, 6) * 5;
     MatrixR R = Eigen::MatrixXd::Identity(3, 3);
@@ -213,7 +272,7 @@ int main()
     // Create an LQR instance and compute the cost matrix
     LQR lqr(Q, R);
     auto start = high_resolution_clock::now();
-    MatrixS S;
+    /*MatrixS S;
     lqr.ComputeCostMatrix(Ad, Bd, S); 
     auto stop = high_resolution_clock::now();
 
@@ -250,8 +309,12 @@ int main()
     stop = high_resolution_clock::now();
     duration = duration_cast<microseconds>(stop - start);
     std::cout << "u* = " << ustar << std::endl;
-    std::cout << "Time taken by ComputeOptimalPolicy: " << duration.count() << " µs" << std::endl;
-    
+    std::cout << "Time taken by ComputeOptimalPolicy: " << duration.count() << " µs" << std::endl;*/
+
+    Simulator sim(ClohessyWiltshire, dt);
+    State starting_state = {5.0, 2.0, -1.0, -0.2, 0.0, -0.49};
+    State goal_state = {0.0,0.0,0.0,0,0,0};
+    lqr.GetTrajectoryCost(starting_state, goal_state, Ad, Bd, sim);
 
     return 0;
 

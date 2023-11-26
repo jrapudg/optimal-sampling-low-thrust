@@ -3,7 +3,7 @@
 
 #include <eigen3/Eigen/Dense>
 #include "astrodynamics.hpp"
-
+#include "simulation.hpp"
 
 namespace Optimal
 {
@@ -45,6 +45,7 @@ class LQR
 
         double QuadraticCost(State& state, Control& control);
 
+        double GetTrajectoryCost(State starting_state, State& goal_state, MatrixA& A, MatrixB& B, Simulation::Simulator& sim, double tol=1e-2);
 
 
     private:
