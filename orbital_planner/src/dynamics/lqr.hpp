@@ -43,6 +43,7 @@ class LQR
 
         MatrixK ComputeOptimalGain(MatrixA& A, MatrixB& B, MatrixS& S);
 
+        double QuadraticCost(State& state, Control& control);
 
 
 

@@ -170,7 +170,10 @@ Control LQR::ComputeOptimalPolicy(State current_state, MatrixA& A, MatrixB& B, M
 }
 
 
-
+double LQR::QuadraticCost(State& state, Control& control)
+{
+    return (state.transpose() * Q * state + control.transpose() * R * control)(0);
+}
 
 
 
