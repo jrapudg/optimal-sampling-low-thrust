@@ -1,7 +1,7 @@
 
 // ROS includes
 #include "ros/console.h"
-#include "orbital_planner/orbital_planner_node.h"
+#include "orbital_planner/orbital_planner_node.hpp"
 
 int main(int argc, char** argv){
     ros::init(argc, argv, "orbital_planner_node");
