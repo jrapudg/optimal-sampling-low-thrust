@@ -30,21 +30,22 @@
 #define RRT_STAR_K_NEIGHBORS 10
 
 #define RRT_STAR_KEEP_UNTIL_TIME_MAX false
-#define RRT_STAR_NODE_REJECTION_ACTIVE true
-#define RRT_STAR_LOCAL_BIAS_ACTIVE true
+#define RRT_STAR_NODE_REJECTION_ACTIVE true //not implemented
+#define RRT_STAR_LOCAL_BIAS_ACTIVE true 
+
+using namespace Astrodynamics;
 
 class RRT_Star_Planner{
 	public:
 		// Attributes
-		std::vector<double> start_config;
-		std::vector<double> goal_config;
+		State start_config;
+		State goal_config;
 		double ***plan;
 		int *plan_length;
 		std::vector<std::shared_ptr<Graph_Node>> path;
 		int count = 0;
 		bool path_found = false;
 		int update_count = 0;
-		int DOF;
 
         int seed = 0; // Change this value as needed
         // Create the Mersenne Twister engine with the fixed seed
@@ -59,9 +60,8 @@ class RRT_Star_Planner{
 		std::shared_ptr<Graph_Node> q_new_node;
 
 		// Constructor
-		RRT_Star_Planner(std::vector<double>& armstart_anglesV_rad, std::vector<double>& armgoal_anglesV_rad, 
-						 int _DOF, double ***_plan, int *_plan_length){
-			DOF = _DOF;
+		RRT_Star_Planner(State& armstart_anglesV_rad, State& armgoal_anglesV_rad, 
+						 double ***_plan, int *_plan_length){
 			tree = Tree(armstart_anglesV_rad);
 			start_config = armstart_anglesV_rad;
 			goal_config = armgoal_anglesV_rad;
@@ -76,20 +76,20 @@ class RRT_Star_Planner{
 
 		// Methods
 		// Sample State 
-		void SampleConfiguration(std::vector<double>& sample_state, bool& path_found);
+		void SampleConfiguration(State& sample_state, bool& path_found);
 		// Sample State Goal Biased
-		void SampleConfiguration(std::vector<double>& sample_state, std::vector<double>& goal_state, bool& path_found);
+		void SampleConfiguration(State& sample_state, State& goal_state, bool& path_found);
 		
 		// Find nearest states 
 		// Need to change distance function in kd_tree.cpp to LQR distance
-		std::shared_ptr<Graph_Node> FindNearestStateTo(Tree& tree, std::vector<double>& state);
-		std::vector<std::shared_ptr<Graph_Node>> FindNearestStates(Tree& tree, std::vector<double>& new_state);
+		std::shared_ptr<Graph_Node> FindNearestStateTo(Tree& tree, State& state);
+		std::vector<std::shared_ptr<Graph_Node>> FindNearestStates(Tree& tree, State& new_state);
 
 		// Check if the state is valid
-		bool ValidState(std::vector<double>& state);
+		bool ValidState(State& state);
 
 		// Tree methods
-		std::shared_ptr<Graph_Node> CreateTreeNode(Tree& tree, std::vector<double>& state);
+		std::shared_ptr<Graph_Node> CreateTreeNode(Tree& tree, State& state);
 		void AddToTree(Tree& tree, std::shared_ptr<Graph_Node> state_node, std::shared_ptr<Graph_Node> parent_state_node);
 		
 		// Choose Parent
@@ -99,15 +99,15 @@ class RRT_Star_Planner{
 		void Rewire(Tree& tree, std::shared_ptr<Graph_Node>& new_state_node, std::shared_ptr<Graph_Node>& parent_node, std::vector<std::shared_ptr<Graph_Node>>& near_nodes);
 
 		void ComputePath(std::shared_ptr<Graph_Node> node);
-		std::vector<double> SteerTowards(Tree& tree, std::vector<double>& sample_state, std::shared_ptr<Graph_Node>& nearest_node);
+		State SteerTowards(Tree& tree, State& sample_state, std::shared_ptr<Graph_Node>& nearest_node);
 
-		void FindPath(std::vector<double>& start_state, std::vector<double>& goal_state);
+		void FindPath(State& start_state, State& goal_state);
 
 
 		// Utils Methods
-		void _sample_goal_biased_config(std::vector<double>& sample_state, std::vector<double>& goal_state);
-		void _sample_local_biased_config(std::vector<double>& sample_state);
-		void _sample_random_config(std::vector<double>& sample_state);
+		void _sample_goal_biased_config(State& sample_state, State& goal_state);
+		void _sample_local_biased_config(State& sample_state);
+		void _sample_random_config(State& sample_state);
 };
 
 #endif // RRT_STAR_H

@@ -3,6 +3,9 @@
 
 #include "basic_structs.hpp"
 #include "utils.hpp"
+#include "../dynamics/astrodynamics.hpp"
+
+using namespace Astrodynamics;
 
 class Tree {
 	public:
@@ -11,17 +14,17 @@ class Tree {
 		std::shared_ptr<Graph_Node> last_node_connected;
 
 		// Constructors
-		Tree(const std::vector<double>& init_config) {
+		Tree(const State& init_config) {
 			add_vertex(init_config);
 		}
 
 		Tree() {};
 
 		// Methods
-		std::shared_ptr<Graph_Node> add_vertex(const std::vector<double>& config);
+		std::shared_ptr<Graph_Node> add_vertex(const State& config);
 		void add_edge(std::shared_ptr<Graph_Node> node, std::shared_ptr<Graph_Node> parent_node);
-		std::shared_ptr<Graph_Node> find_nearest_neighbor(const std::vector<double>& target);
-		std::vector<std::shared_ptr<Graph_Node>> find_neighbors_within_radius(const std::vector<double>& target, double radius, int k_neighbors);
+		std::shared_ptr<Graph_Node> find_nearest_neighbor(const State& target);
+		std::vector<std::shared_ptr<Graph_Node>> find_neighbors_within_radius(const State& target, double radius, int k_neighbors);
 		int get_current_index();
 
 	private:

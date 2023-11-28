@@ -10,25 +10,28 @@
 //                                           RRT STAR IMPLEMENTATION                                                 //
 //                                                                                                                   //
 //*******************************************************************************************************************//
-std::vector<double> convertArrayToVector(const double* array, int size) {
-    // Construct a vector from the array elements
-    return std::vector<double>(array, array + size);
+State convertArrayToState(const double* array) {
+    // Ensure the input array has size 3
+    State state;
+    for (int i = 0; i < state.rows(); ++i) {
+        state(i) = array[i];
+    }
+    return state;
 }
 
 static void plannerRRTStar(
     double *start_state,
     double *goal_state,
-    int numofDOFs,
     double ***plan,
     int *planlength)
 {	
-	std::vector<double> start_state_vec = convertArrayToVector(start_state, numofDOFs);
-	std::vector<double> goal_state_vec = convertArrayToVector(goal_state, numofDOFs);
+	State start_state_vec = convertArrayToState(start_state);
+	State goal_state_vec = convertArrayToState(goal_state);
 
     std::cout << std::endl << "******RRT-STAR PLANNER*****" << std::endl;
 	RRT_Star_Planner planner_rrt_star = RRT_Star_Planner(start_state_vec, 
 														 goal_state_vec, 
-														 numofDOFs, plan, planlength);
+														 plan, planlength);
 
 	std::cout << "----BUILDING TREE----" << std::endl;
 	planner_rrt_star.FindPath(start_state_vec, goal_state_vec);
@@ -52,8 +55,8 @@ int main(int argc, char** argv) {
 	double* goalPos = doubleArrayFromString(argv[2]);
 	string outputFile = argv[4];
 
-	std::vector<double> startPos_vec = convertArrayToVector(startPos, numOfDOFs);
-	std::vector<double> goalPos_vec = convertArrayToVector(goalPos, numOfDOFs);
+	State startPos_vec = convertArrayToState(startPos);
+	State goalPos_vec = convertArrayToState(goalPos);
 
 	///////////////////////////////////////
 	//// Feel free to modify anything below. Be careful modifying anything above.
@@ -62,7 +65,7 @@ int main(int argc, char** argv) {
 	int planlength = 0;
 
     // Call the corresponding planner function
-    plannerRRTStar(startPos, goalPos, numOfDOFs, &plan, &planlength);
+    plannerRRTStar(startPos, goalPos, &plan, &planlength);
 
 	//// Feel free to modify anything above.
 	//// If you modify something below, please change it back afterwards as my 

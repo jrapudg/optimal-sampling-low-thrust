@@ -1,8 +1,11 @@
 #include "rrt_star.hpp"
 
+using namespace Astrodynamics;
+
 // Methods
 void RRT_Star_Planner::ComputePath(std::shared_ptr<Graph_Node> node){
     //std::cout << "Computing path ..." << std::endl;
+    int DOF = start_node->config.rows();
     path.clear();
     path.insert(path.begin(), node);
     while(node->parent != start_node){
@@ -27,9 +30,9 @@ void RRT_Star_Planner::ComputePath(std::shared_ptr<Graph_Node> node){
     *plan_length = path.size();
 }
 
-void RRT_Star_Planner::FindPath(std::vector<double>& start_state, std::vector<double>& goal_state){
+void RRT_Star_Planner::FindPath(State& start_state, State& goal_state){
     auto start = std::chrono::high_resolution_clock::now();
-    std::vector<double> state_rand(start_state.size());
+    State state_rand;
     std::shared_ptr<Graph_Node> parent_node;
 
     for (int i = 0; i < RRT_STAR_NUM_ITER; i++) { 
@@ -115,10 +118,10 @@ void RRT_Star_Planner::FindPath(std::vector<double>& start_state, std::vector<do
         }
     }
 }
- 
-std::vector<double> RRT_Star_Planner::SteerTowards(Tree& tree, std::vector<double>& sample_state, std::shared_ptr<Graph_Node>& nearest_node){
-    std::vector<double> q_new(sample_state.size());
-    
+
+// INTEGRATE HERE
+State RRT_Star_Planner::SteerTowards(Tree& tree, State& sample_state, std::shared_ptr<Graph_Node>& nearest_node){
+    State q_new;
     return q_new;
 }
 
@@ -157,30 +160,29 @@ void RRT_Star_Planner::ChooseParent(Tree& tree,
     }
 }
 
-std::shared_ptr<Graph_Node> RRT_Star_Planner::CreateTreeNode(Tree& tree, std::vector<double>& state){
+std::shared_ptr<Graph_Node> RRT_Star_Planner::CreateTreeNode(Tree& tree, State& state){
     return tree.add_vertex(state);
-}
+};
 
 void RRT_Star_Planner::AddToTree(Tree& tree, std::shared_ptr<Graph_Node> state_node, std::shared_ptr<Graph_Node> parent_state_node){
     tree.add_edge(state_node, parent_state_node);
-}
+};
 
-// Change function for our project. Ask space guys, what is a valid state?
-bool RRT_Star_Planner::ValidState(std::vector<double>& state){
+// INTEGRATE HERE
+bool RRT_Star_Planner::ValidState(State& state){
     return true;
 }
 
-// Change distance function in kd_tree.cpp for lqr cost-to-go -> KD_Tree::_distance(const std::vector<double>& a, const std::vector<double>& b)
-std::shared_ptr<Graph_Node> RRT_Star_Planner::FindNearestStateTo(Tree& tree, std::vector<double>& state){
+std::shared_ptr<Graph_Node> RRT_Star_Planner::FindNearestStateTo(Tree& tree, State& state){
     return tree.find_nearest_neighbor(state);
-}
+};
 
-std::vector<std::shared_ptr<Graph_Node>> RRT_Star_Planner::FindNearestStates(Tree& tree, std::vector<double>& new_state){
+std::vector<std::shared_ptr<Graph_Node>> RRT_Star_Planner::FindNearestStates(Tree& tree, State& new_state){
     return tree.find_neighbors_within_radius(new_state, RRT_STAR_REW_RADIUS, RRT_STAR_K_NEIGHBORS);
-}
+};
 
-// Utils Methods
-void RRT_Star_Planner::SampleConfiguration(std::vector<double>& sample_state, bool& path_found){
+// INTEGRATE HERE
+void RRT_Star_Planner::SampleConfiguration(State& sample_state, State& goal_state, bool& path_found){
     // Generate a random number between 0 and 1
     double p_value = static_cast<double>(rand()) / RAND_MAX;
     if (RRT_STAR_LOCAL_BIAS_ACTIVE & (p_value < RRT_STAR_LOCAL_BIASED) & path_found){
@@ -191,40 +193,25 @@ void RRT_Star_Planner::SampleConfiguration(std::vector<double>& sample_state, bo
     }
 }
 
-void RRT_Star_Planner::SampleConfiguration(std::vector<double>& sample_state, std::vector<double>& goal_state, bool& path_found){
-    // Generate a random number between 0 and 1
-    double p_value = static_cast<double>(rand()) / RAND_MAX;
-    if ((p_value < RRT_STAR_GOAL_BIASED) & !path_found){
-        _sample_goal_biased_config(sample_state, goal_state);
-    }
-    else if (RRT_STAR_LOCAL_BIAS_ACTIVE & (p_value < RRT_STAR_LOCAL_BIASED) & path_found){
-        _sample_local_biased_config(sample_state);
-    }
-    else{
-        _sample_random_config(sample_state);
-    }
-}
-
 // Utils Methods
-void RRT_Star_Planner::_sample_goal_biased_config(std::vector<double>& sample_state, std::vector<double>& goal_state){
+void RRT_Star_Planner::_sample_goal_biased_config(State& sample_state, State& goal_state){
     if(RRT_STAR_DEBUG_LOCAL){
         std::cout << "GOAL sampling ..." << std::endl;
     }
 
-    for (int i = 0; i < goal_state.size(); i++){ 
+    for (int i = 0; i < goal_state.rows(); i++){ 
         sample_state[i] = goal_state[i] + distribution_rrt_star(gen);
     }
 }
 
-// Utils Methods
-void RRT_Star_Planner::_sample_local_biased_config(std::vector<double>& sample_state){
+void RRT_Star_Planner::_sample_local_biased_config(State& sample_state){
     if(RRT_STAR_DEBUG_LOCAL){
         std::cout << "LOCAL sampling ..." << std::endl;
     }
     // Generate a random number between 0 and Tree size
     std::uniform_int_distribution<int> distribution_node(2, path.size()-1);
     int random_node_index = distribution_node(gen);
-    std::vector<double> q_tmp(sample_state.size());
+    State q_tmp;
     double q_tmp_norm;
 
     if(RRT_STAR_DEBUG_LOCAL){
@@ -235,6 +222,7 @@ void RRT_Star_Planner::_sample_local_biased_config(std::vector<double>& sample_s
     auto q_2_node = path[random_node_index];
     auto q_node = q_2_node->parent;
     auto q_1_node = q_node->parent;
+
     if(RRT_STAR_DEBUG_LOCAL){
         print_config(q_1_node->config);
         print_config(q_node->config);
@@ -242,7 +230,7 @@ void RRT_Star_Planner::_sample_local_biased_config(std::vector<double>& sample_s
         std::cout << "Temporal node" << std::endl;
     }
     
-    for (int i=0; i<DOF; i++){
+    for (int i=0; i<sample_state.rows(); i++){
         q_tmp[i] = (q_1_node->config[i] + q_2_node->config[i])/2 - q_node->config[i];			
     }
 
@@ -260,7 +248,7 @@ void RRT_Star_Planner::_sample_local_biased_config(std::vector<double>& sample_s
         std::cout << "Sample calculation" << std::endl;
     }
 
-    for (int i=0; i < DOF; i++){
+    for (int i=0; i < sample_state.rows(); i++){
         sample_state[i] = q_node->config[i] + q_tmp[i]*distribution_local_bias(gen)/q_tmp_norm;
     }
 
@@ -268,14 +256,14 @@ void RRT_Star_Planner::_sample_local_biased_config(std::vector<double>& sample_s
         print_config(sample_state);
         std::cout << "Local sampling DONE!" << std::endl;
     }
-}
+};
 
-void RRT_Star_Planner::_sample_random_config(std::vector<double>& sample_state){
+void RRT_Star_Planner::_sample_random_config(State& sample_state){
     if(RRT_STAR_DEBUG_LOCAL){
         std::cout << "RANDOM sampling ..." << std::endl;
     }
     
-    for (int i = 0; i < DOF; i++){ 
+    for (int i = 0; i < sample_state.rows(); i++){ 
         sample_state[i] = (double)rand() / RAND_MAX * MAX_ANGLE;
     }
-}
+};

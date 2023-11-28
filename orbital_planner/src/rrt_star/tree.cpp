@@ -1,7 +1,9 @@
 #include "tree.hpp"
 
+using namespace Astrodynamics;
+
 // Methods
-std::shared_ptr<Graph_Node> Tree::add_vertex(const std::vector<double>& config){
+std::shared_ptr<Graph_Node> Tree::add_vertex(const State& config){
     auto node = create_graph_node(current_index, config);
     list[current_index] = node;
     //kd_tree.insert(kd_tree.root, node, 0);
@@ -14,7 +16,7 @@ void Tree::add_edge(std::shared_ptr<Graph_Node> node, std::shared_ptr<Graph_Node
     node->g = parent_node->g + config_distance(node->config, parent_node->config);
 }
 
-std::shared_ptr<Graph_Node> Tree::find_nearest_neighbor(const std::vector<double>& target){
+std::shared_ptr<Graph_Node> Tree::find_nearest_neighbor(const State& target){
     int nearest_neighbor = 0;
     double best_distance = config_distance(list[0]->config, target);
     for(const auto& value : list)
@@ -40,7 +42,7 @@ struct CompareNodeDist {
 };
 
 
-std::vector<std::shared_ptr<Graph_Node>> Tree::find_neighbors_within_radius(const std::vector<double>& target, double radius, int k_neighbors){
+std::vector<std::shared_ptr<Graph_Node>> Tree::find_neighbors_within_radius(const State& target, double radius, int k_neighbors){
     std::priority_queue<std::pair<std::shared_ptr<Graph_Node>, double>, std::vector<std::pair<std::shared_ptr<Graph_Node>, double>>, CompareNodeDist> node_dist_queue;
     for(auto& value : list)
     {

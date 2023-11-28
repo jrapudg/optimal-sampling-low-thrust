@@ -21,6 +21,8 @@
 #include <fstream> // For reading/writing files
 #include <assert.h> 
 
+#include "../dynamics/astrodynamics.hpp"
+
 #define GETMAPINDEX(X, Y, XSIZE, YSIZE) (Y*XSIZE + X)
 
 #if !defined(MAX)
@@ -46,6 +48,7 @@ using std::tie;
 using std::cout;
 using std::endl;
 
+using namespace Astrodynamics;
 //*******************************************************************************************************************//
 //                                                                                                                   //
 //                                                GIVEN FUNCTIONS                                                    //
@@ -64,25 +67,22 @@ bool equalDoubleArrays(double* v1, double *v2, int size);
 //                                          HELPER FUNCTIONS                                                         //
 //                                                                                                                   //
 //*******************************************************************************************************************//
-std::vector<double> ForwadSim(std::vector<double>& q_next, std::vector<double>& q_current, std::vector<double>& q_rand, double dt);
+State ForwadSim(State& q_next, State& q_current, State& q_rand, double dt);
 
-double GetTrajectoryCost(const std::vector<double>& current_state, const std::vector<double>& new_state);
+// INTEGRATE HERE
+double GetTrajectoryCost(const State& current_state, const State& new_state);
 
 double circular_distance(double angle1, double angle2);
 
-double config_distance(const std::vector<double>& a, const std::vector<double>& b);
+// INTEGRATE HERE
+double config_distance(const State& a, const State& b);
 
-double calculate_norm(const std::vector<double>& config);
+double calculate_norm(const State& config);
 
-// Function to generate n uniformly spaced points between start and end configurations
-std::vector<std::vector<double>> generate_uniform_interpolation(const std::vector<double>& start_config, const std::vector<double>& end_config, int n);
+bool are_configs_equal(const State& config1, const State& config2);
 
-std::vector<std::vector<double>>  generate_epsilon_interpolation(const std::vector<double>& start_config, const std::vector<double>& end_config, int n, double epsilon);
+bool are_configs_close(const State& config1, const State& config2, double min_distance);
 
-bool are_configs_equal(const std::vector<double>& config1, const std::vector<double>& config2);
-
-bool are_configs_close(const std::vector<double>& config1, const std::vector<double>& config2, double min_distance);
-
-void print_config(const std::vector<double>& config);
+void print_config(const State& config);
 
 #endif // UTILS_H

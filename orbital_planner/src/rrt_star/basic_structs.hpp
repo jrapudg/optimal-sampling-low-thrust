@@ -6,10 +6,14 @@
 #include <memory>
 #include <limits>
 
+#include "../dynamics/astrodynamics.hpp"
+
+using namespace Astrodynamics;
+
 struct Graph_Node {
     // Input Attributes
     int index;
-    std::vector<double> config;
+    State config;
 
     // Methods Attributes
     double g = std::numeric_limits<double>::max();
@@ -18,12 +22,12 @@ struct Graph_Node {
     std::vector<int> neighbors;
 
     // Constructor
-    Graph_Node(int _i, const std::vector<double>& _config) : index(_i), config(_config) {
+    Graph_Node(int _i, const State& _config) : index(_i), config(_config) {
         // config is directly initialized using the initializer list
     }
 };
 
 // Initialization function for the Graph_Node struct
-std::shared_ptr<Graph_Node> create_graph_node(int index, const std::vector<double>& config);
+std::shared_ptr<Graph_Node> create_graph_node(int index, const State& config);
 
 #endif // BASIC_STRUCTS_H

@@ -1,5 +1,7 @@
 #include "utils.hpp"
 
+using namespace Astrodynamics;
+
 //*******************************************************************************************************************//
 //                                                                                                                   //
 //                                                GIVEN FUNCTIONS                                                    //
@@ -37,18 +39,15 @@ bool equalDoubleArrays(double* v1, double *v2, int size) {
 //                                          HELPER FUNCTIONS                                                         //
 //                                                                                                                   //
 //*******************************************************************************************************************//
-bool are_configs_close(const std::vector<double>& config1, const std::vector<double>& config2, double min_distance) {
-    if (config1.size() != config2.size()) {
-        return false;  // Configurations must be of the same size
-    }
-
-    if (config_distance(config1, config2) <= min_distance) {
-        return true;
-    }
-    return false;
+bool are_configs_equal(const State& config1, const State& config2) {
+    return config1.isApprox(config2, 0.0);  // Using Eigen's isApprox function with zero tolerance for exact equality.
 }
 
-double GetTrajectoryCost(const std::vector<double>& state, const std::vector<double>& control){
+bool are_configs_close(const State& config1, const State& config2, double min_distance) {
+    return config_distance(config1, config2) <= min_distance;  // Simplified to a single line.
+}
+
+double GetTrajectoryCost(const State& state, const State& control){
 	return config_distance(state, control);
 }
 
@@ -56,49 +55,29 @@ double circular_distance(double angle1, double angle2) {
 	// Function to calculate the circular distance between two angles in radians
     double diff = abs(angle2 - angle1);
     return MIN(diff, abs(2*M_PI - diff));
-}
+};
 
-double config_distance(const std::vector<double>& a, const std::vector<double>& b) {
-    // It's good practice to check that the sizes of the vectors are the same
-    if (a.size() != b.size()) {
-        throw std::invalid_argument("Vectors must be of the same size.");
-    }
+double config_distance(const State& a, const State& b) {
+    // Using rows() to determine the size of the matrix.
+    int size = a.rows();
 
     double dist = 0;
-    for (size_t i = 0; i < a.size(); ++i) {
-        dist += circular_distance(a[i], b[i]);
+    for (int i = 0; i < size; ++i) {
+        dist += circular_distance(a(i), b(i));
     }
     return dist;
-}
+};
 
-double calculate_norm(const std::vector<double>& config) {
-    double norm = 0.0;
+double calculate_norm(const State& config) {
+    return config.norm();  // Eigen's built-in function to calculate the Euclidean norm.
+};
 
-    for (size_t i = 0; i < config.size(); i++) {
-        norm += config[i] * config[i];
-    }
-    return std::sqrt(norm);
-}
-
-bool are_configs_equal(const std::vector<double>& config1, const std::vector<double>& config2) {
-    if (config1.size() != config2.size()) {
-        return false;  // Vectors are of different sizes
-    }
-
-    for (size_t i = 0; i < config1.size(); i++) {
-        if (config1[i] != config2[i]) {
-            return false; // At least one element is different
-        }
-    }
-    return true; // All elements are equal
-}
-
-void print_config(const std::vector<double>& config) {
+void print_config(const State& config) {
     std::cout << "Config (";
-    for (size_t j = 0; j < config.size(); j++) {
-        std::cout << config[j];
-        if (j < config.size() - 1) {
-            std::cout << ", ";  // Add comma between elements, but not after the last one
+    for (int i = 0; i < config.rows(); ++i) {
+        std::cout << config(i);
+        if (i < config.rows() - 1) {
+            std::cout << ", ";
         }
     }
     std::cout << ")" << std::endl;
