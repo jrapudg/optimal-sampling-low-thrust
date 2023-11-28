@@ -4,16 +4,22 @@
 #include <stdexcept>
 #include <cmath>
 #include <random>
+#include <unistd.h>
+
 
 #include "lqr.hpp"
-#include "astrodynamics.hpp"
-#include <eigen3/unsupported/Eigen/MatrixFunctions>
+
+
+
+namespace Optimal
+{
+
+
 
 using namespace std::chrono;
 
 
-
-LQR::LQR(const Eigen::MatrixXd& Q, const Eigen::MatrixXd& R)
+LQR::LQR(const MatrixQ& Q, const MatrixR& R)
  : Q(Q), R(R)
 {
 
@@ -21,32 +27,49 @@ LQR::LQR(const Eigen::MatrixXd& Q, const Eigen::MatrixXd& R)
         throw std::invalid_argument("Matrices Q and R must be square.");
     }
 
-    dim = Q.rows();
+    dim = Q.rows(); // must be 6
 
     // TODO check Q is p.s.d, R is p.d
 
+    /*
+    if (!A.isApprox(A.transpose()) || A_llt.info() == Eigen::NumericalIssue) {
+    throw std::runtime_error("Possibly non semi-positive definitie matrix!");
+}    
+    */
+
 }
 
 
-const Eigen::MatrixXd& LQR::getQ() const {
+const MatrixQ& LQR::GetQ() const {
     return Q;
 }
 
-const Eigen::MatrixXd& LQR::getR() const {
+const MatrixR& LQR::GetR() const {
     return R;
 }
 
-Eigen::MatrixXd LQR::ComputeCostMatrix(Eigen::MatrixXd& A, Eigen::MatrixXd& B)
-{
-    // TODO ensure Q is symmetric and pd, R is pd
-    // TODO Check dimensions on A and B 
-    return _SolveRicatti(A, B);
+void LQR::SetQ(const MatrixQ& newQ) {
+    // Must check before
+    Q = newQ;
+}
 
+void LQR::SetR(const MatrixR& newR) {
+    // Must check before
+    R = newR;
 }
 
 
 
-Eigen::MatrixXd LQR::_SolveRicatti(Eigen::MatrixXd& A, Eigen::MatrixXd& B, double tol)
+
+
+void LQR::ComputeCostMatrix(const MatrixA& A, const MatrixB& B, MatrixS& S,double tol, bool DEBUG)
+{
+    // TODO ensure Q is symmetric and pd, R is pd
+    _SolveRicatti(A, B, S, tol, DEBUG);
+}
+
+
+void LQR::_SolveRicatti(const MatrixA& A, const MatrixB& B, MatrixS& S, double tol, bool DEBUG)
 {
 
 
@@ -54,14 +77,13 @@ Eigen::MatrixXd LQR::_SolveRicatti(Eigen::MatrixXd& A, Eigen::MatrixXd& B, doubl
     // International Journal of Control, 77:8, 767-788, 2004. DOI: 10.1080/00207170410001714988
     // https://scicomp.stackexchange.com/questions/30757/discrete-time-algebraic-riccati-equation-dare-solver-in-c 
 
-
     // Initialization 
-    int j = 0;
-    Eigen::MatrixXd Ak = A;
-    Eigen::LLT<Eigen::MatrixXd> R_LLT(R); // compute the Cholesky decomposition of R
-    Eigen::MatrixXd Gk = B * R_LLT.solve(B.transpose());
-    Eigen::MatrixXd Hk = Q;
-    Eigen::MatrixXd Hk1 = Q;
+    /*int j = 0;
+    MatrixA Ak = A;
+    Eigen::LLT<MatrixR> R_LLT(R); // compute the Cholesky decomposition of R
+    MatrixS Gk = B * R_LLT.solve(B.transpose());
+    MatrixS Hk;
+    MatrixS Hk1 = Q;
 
     // SDA algorithm
     do
@@ -82,7 +104,7 @@ Eigen::MatrixXd LQR::_SolveRicatti(Eigen::MatrixXd& A, Eigen::MatrixXd& B, doubl
         Ak = Ak * V1;
 
         // Gk1 = Gk + Ak V2 Ak' 
-        Gk += Ak * V2 * Ak.transpose();
+        Gk = Gk + Ak * V2 * Ak.transpose();
 
         // Hk1 = Hk + V1' Hk Ak
         Hk1 = Hk + V1.transpose() * Hk * Ak;
@@ -90,166 +112,181 @@ Eigen::MatrixXd LQR::_SolveRicatti(Eigen::MatrixXd& A, Eigen::MatrixXd& B, doubl
     } while ((Hk1-Hk).norm() > tol * Hk1.norm());
 
 
-    return Hk1; // This is S
+    //return Hk1; // This is S
+    S = Hk1;*/
 
+    
 
-}
+    // Ricatti recursion
+    MatrixA At = A.transpose();
+    Eigen::Matrix<double, 3, 6> Bt = B.transpose();
 
+    S = Q;
+    MatrixS Sp;
 
+    double d = tol;
 
-// Conversion to Eigen::VectorXd
-Eigen::VectorXd LQR::toEigen(State state)
-{
-    int size =state.size();
-    Eigen::VectorXd vec(size);
-    for (size_t i = 0; i < size; ++i) {
-        vec[i] = state[i];
+    size_t i = 0;
+    
+
+    for (size_t ii=0; ii < 1000 && d >= tol; ++ii)
+    {
+        Sp = S;
+        auto tlu = (Bt * S * B + R).lu();
+        
+        S = Q + At * S * A - At * S * B * tlu.solve(Bt * S * A);
+        d = (S - Sp).array().abs().sum();
+
+        if (DEBUG){i = ii;};
     }
-    return vec;
+    if (DEBUG)
+    {
+        std::cout << "Tolerance obtained: " << d << std::endl;
+        std::cout << "Iteration count: " << i << std::endl;
+    }
+
+
+
 }
 
 
-
-double LQR::ComputeCostToGo(State state, State target_state, Eigen::MatrixXd& S)
+double LQR::ComputeCostToGo(State state, State target_state, MatrixS& S)
 {
-    Eigen::MatrixXd xbar = toEigen(target_state - state);
+    State xbar = target_state - state;
     return  (xbar.transpose() * S * xbar)(0,0);
 }
 
-Control LQR::ComputeOptimalPolicy(State current_state, Eigen::MatrixXd& B, Eigen::MatrixXd& S)
+
+MatrixK LQR::ComputeOptimalGain(MatrixA& A, MatrixB& B, MatrixS& S)
 {
-    Eigen::LLT<Eigen::MatrixXd> R_LLT(R); // compute the Cholesky decomposition of R
-    Eigen::VectorXd u = R_LLT.solve(B.transpose() * S * toEigen(current_state));
-    return Control(u);
-}
-
-void Discretize(Eigen::MatrixXd& Ac, Eigen::MatrixXd& Bc, double dt, Eigen::MatrixXd& Ad, Eigen::MatrixXd& Bd)
-{
-
-    int nx = Ac.rows(); 
-    int nu = Bc.cols(); 
-
-    // Create a combined matrix for A and B
-    Eigen::MatrixXd Mat = Eigen::MatrixXd::Zero(nx + nu, nx + nu);
-    Mat.topLeftCorner(nx, nx) = Ac * dt;
-    Mat.topRightCorner(nx, nu) = Bc * dt;
-
-    // Take the matrix exponential of M
-    Mat = Mat.exp();
-
-    // Extract Ad and Bd from the matrix exponential of M
-    Ad = Mat.topLeftCorner(nx, nx);
-    Bd = Mat.topRightCorner(nx, nu);
-
+    Eigen::Matrix<double, 3, 6> Bt = B.transpose();
+    Eigen::LDLT<Eigen::MatrixXd> r_LLT(R + Bt * S * B); // compute the Cholesky decomposition
+    return (r_LLT).solve(Bt * S * A);
 }
 
 
-void clohessy_wiltshire(Eigen::MatrixXd& A, Eigen::MatrixXd& B, double m=100.0) 
+Control LQR::ComputeOptimalPolicy(State current_state, MatrixA& A, MatrixB& B, MatrixS& S)
+{
+    return - ComputeOptimalGain(A, B, S) * current_state;
+}
+
+
+double LQR::QuadraticCost(State& state, Control& control)
+{
+    return (state.transpose() * Q * state + control.transpose() * R * control)(0);
+}
+
+
+double LQR::GetTrajectoryCost(State starting_state, State& goal_state, MatrixA& A, MatrixB& B, Simulation::Simulator& sim, double tol)
 {
 
-    double sma = LEO_MAX;
-    const double n = std::sqrt(3.986004418e14 / std::pow(sma, 3));
+    Control control;
 
-    // Define matrix A
-    A << 0, 0, 0, 1, 0, 0,
-         0, 0, 0, 0, 1, 0,
-         0, 0, 0, 0, 0, 1,
-         3*n*n, 0, 0, 0, 2*n, 0,
-         0, 0, 0, -2*n, 0, 0,
-         0, 0, -n*n, 0, 0, 0;
+    // Compute the Cost Matrix 
+    MatrixS S;
+    ComputeCostMatrix(A, B, S);
+    // Compute Optimal Gain
+    MatrixK K = ComputeOptimalGain(A, B, S);
 
-    // Define matrix B
-    B << 0, 0, 0,
-        0, 0, 0,
-        0, 0, 0,
-        1, 0, 0,
-        0, 1, 0, 
-        0, 0, 1;
+    // Initial state
+    State current_state = starting_state;
+    State next_state;
+
+    // Initial cost     
+    double J = 0;
+    control = K * current_state;
+    J += QuadraticCost(current_state, control);
+
+
+    while (true)
+    {
+        //std::cout << "-----------" << std::endl;
+        //std::cout << "Current state: \n" << current_state << std::endl;
+        // Optimal policy
+        control = - K * current_state;
+
+        //std::cout << "Control: \n" << control << std::endl;
+
+        sim.Step(current_state, control, next_state);
+        //next_state = A * current_state + B * control;
+
+        //std::cout << "Next state: " << next_state << std::endl;
+
+        J += QuadraticCost(next_state, control);
+
+        //std::cout << "Residual " << (current_state - goal_state).squaredNorm() << std::endl;
+
+        if ((current_state - goal_state).squaredNorm() <= tol)
+        {
+            break;
+        }
+        else
+        {
+            current_state = next_state;
+        }
+
+        //std::cout << "J --- " << J << std::endl;
+        //usleep(100000);
+
+
+    }
+
+    return J;
+
 
 
 }
 
+}
 
 
-/*int main()
+/*
+int main()
 {
-    
+
+    using namespace std;
+    using namespace Astrodynamics;
+    using namespace Optimal;
+    using namespace Simulation;
+
     double dt = 0.1;
-    
-    // Double integrator discrete dynamics - zero-hold approx
-    Eigen::MatrixXd Ad(2, 2);
-    Eigen::MatrixXd Bd(2, 1);
-    Ad << 1, dt,
-          0, 1;
-    Bd << 0,
-          dt;
-
-    // Q and R
-    Eigen::MatrixXd Q = Eigen::MatrixXd::Identity(2, 2);
-    Eigen::MatrixXd R = Eigen::MatrixXd::Identity(1, 1);
 
     // Clohessy-Wiltshire 6D 
     
-    Eigen::MatrixXd A(6,6);
-    Eigen::MatrixXd B(6,3);
-    Eigen::MatrixXd Ad(6,6);
-    Eigen::MatrixXd Bd(6,3);
-    clohessy_wiltshire(A, B);
-    std::cout << "A: \n" << A << std::endl;
-    std::cout << "B: \n" << B << std::endl;
-    Discretize(A, B, dt, Ad, Bd);
-    std::cout << "Ad: \n" << Ad << std::endl;
-    std::cout << "Bd: \n" << Bd << std::endl;
-    Eigen::MatrixXd Q = Eigen::MatrixXd::Identity(6, 6) * 10;
-    Eigen::MatrixXd R = Eigen::MatrixXd::Identity(3, 3);
+    MatrixA A(6,6);
+    MatrixB B(6,3);
+    MatrixA Ad(6,6);
+    MatrixB Bd(6,3);
+    GetClohessyWiltshireMatrices(A, B);
+
+    //std::cout << "A: \n" << A << std::endl;
+    //std::cout << "B: \n" << B << std::endl;
+    Simulator::Discretize(A, B, dt, Ad, Bd);
+    //std::cout << "Ad: \n" << Ad << std::endl;
+    //std::cout << "Bd: \n" << Bd << std::endl;
+
+    MatrixQ Q = Eigen::MatrixXd::Identity(6, 6) * 5;
+    MatrixR R = Eigen::MatrixXd::Identity(3, 3);
 
 
     // Create an LQR instance and compute the cost matrix
     LQR lqr(Q, R);
-    auto start = high_resolution_clock::now();
-    Eigen::MatrixXd S = lqr.ComputeCostMatrix(Ad, Bd); 
-    auto stop = high_resolution_clock::now();
-
-    auto duration = duration_cast<microseconds>(stop - start);
-
-    std::cout << "Computed Cost Matrix (S): \n" << S << std::endl;
-    std::cout << "Time taken by ricatti: " << duration.count() << " µs" << std::endl;
+    //auto start = high_resolution_clock::now();
+    //auto stop = high_resolution_clock::now();
+    //auto duration = duration_cast<microseconds>(stop - start);
 
 
-    std::random_device rd;
-    std::mt19937 rng = std::mt19937(rd());
-    std::vector<double> d_start(6);
-    std::uniform_real_distribution<double> dis = std::uniform_real_distribution<double>(-100, 100);
-    std::cout << "Start ";
-    for (int i = 0; i < 6; ++i)
-    {
-        d_start[i] = dis(rng);
-        std::cout << d_start[i] << " ";
-    }
-    std::cout << std::endl;
 
 
-    State6D s_state(d_start);
-    State6D g_state;
 
 
-    start = high_resolution_clock::now();
-    double v = lqr.ComputeCostToGo(s_state, g_state, S);
-    stop = high_resolution_clock::now();
-    duration = duration_cast<microseconds>(stop - start);
-    std::cout << "V(x) = " << v << std::endl;
-    std::cout << "Time taken by CostToGo: " << duration.count() << " µs" << std::endl;
-    
-
-
-    start = high_resolution_clock::now();
-    Control ustar = lqr.ComputeOptimalPolicy(s_state, Bd, S);
-    stop = high_resolution_clock::now();
-    duration = duration_cast<microseconds>(stop - start);
-    std::cout << "u* = " << ustar << std::endl;
-    std::cout << "Time taken by ComputeOptimalPolicy: " << duration.count() << " µs" << std::endl;
-    
+    Simulator sim(ClohessyWiltshire, dt);
+    State starting_state = {5.0, 2.0, -1.0, -0.2, 0.0, -0.49};
+    State goal_state = {0.0,0.0,0.0,0,0,0};
+    lqr.GetTrajectoryCost(starting_state, goal_state, Ad, Bd, sim);
 
     return 0;
 
-}*/
+}
+
+*/

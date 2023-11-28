@@ -1,8 +1,9 @@
 # On-Orbit Optimal Kinodynamic Planning for Low-Thrust Trajectory Maneuvers
 
-## Requires
+## Requires and Testing
 
 Eigen3 - https://eigen.tuxfamily.org/dox/GettingStarted.html
+Catch2 for unit testing - https://github.com/catchorg/Catch2/blob/v2.x/docs/tutorial.md#top 
 
 ## Running the Code
 
@@ -24,10 +25,6 @@ Member variable: snake_case
 
 Data structures: e.g. Data_Structure
 
-## Testing
-
-TODO - Using https://github.com/catchorg/Catch2/blob/v2.x/docs/tutorial.md#top 
-
 ## Project Proposal
 
 Group: Ibrahima, Juan, Nayana, Fausto
@@ -41,13 +38,13 @@ We want to leverage the cost-to-go function of linear quadratic regulation (LQR)
 [2] Perez, Alejandro, et al. "LQR-RRT*: Optimal sampling-based motion planning with automatically derived extension heuristics." 2012 IEEE International Conference on Robotics and Automation. IEEE, 2012.
 
 ## TODO (non-exhaustive)
-- Scaled version of dynamics
-- CR3BP
-- Differentiation for linearization 
-- RRT, RRT* implementation (+ others if necessary)
-- Orbit sampling (LEO, MEO, GEO, GTO, Lunar)
+- Visualizer for spacecraft and world (earth, moon)
+- CR3BP + Scaled version of dynamics
+- Add Jacobians
+- RRT* implementation
+- Smart sampling
 - Conversion orbital elements >< cartesian state 
 - Automated file saving trajectory + format
-- Automated visualizer, spacecraft mesh + planets/solar system/background (need to handle the scale)
+
 
 
