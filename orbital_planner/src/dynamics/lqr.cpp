@@ -166,8 +166,12 @@ double LQR::QuadraticCost(State& state, Control& control)
 }
 
 double LQR::GetTrajectoryCost(State starting_state, State& goal_state, MatrixA& A, MatrixB& B, Simulation::Simulator& sim, double tol)
-{
-
+{   
+    std::cout << "Getting Trajectory cost ..." << std::endl;
+    std::cout << "Start ";
+    Print(starting_state);
+    std::cout << "Goal ";
+    Print(goal_state); 
     Control control;
 
     // Compute the Cost Matrix 
