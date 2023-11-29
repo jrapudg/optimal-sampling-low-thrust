@@ -32,7 +32,7 @@ void RRT_Star_Planner::ComputePath(std::shared_ptr<Graph_Node> node){
             (*plan)[i][j] = (path[i])->config[j];
         }
         if (i != 0){
-            (path[i])->g = (path[i])->parent->g + lqr.GetTrajectoryCost((path[i])->parent->config, path[i]->config, A, B, sim, SIM_COST_TOL);
+            (path[i])->g = (path[i])->parent->g + lqr.GetTrajectoryCost((path[i])->parent->config, path[i]->config, Ad, Bd, sim, SIM_COST_TOL);
         }
     }    
     *plan_length = path.size();
@@ -194,11 +194,11 @@ void RRT_Star_Planner::SteerTowards(Tree& tree, State& sample_state, std::shared
 void RRT_Star_Planner::Rewire(Tree& tree, std::shared_ptr<Graph_Node>& new_state_node, std::shared_ptr<Graph_Node>& parent_node, std::vector<std::shared_ptr<Graph_Node>>& near_nodes){
     for (auto& near_node : near_nodes){
         if ((near_node != new_state_node) & (near_node != parent_node) & 
-            (near_node->g > new_state_node->g + lqr.GetTrajectoryCost(new_state_node->config, near_node->config, A, B, sim, SIM_COST_TOL))){
+            (near_node->g > new_state_node->g + lqr.GetTrajectoryCost(new_state_node->config, near_node->config, Ad, Bd, sim, SIM_COST_TOL))){
             
             if (RRT_STAR_DEBUG_REWIRING){
                 std::cout << "Rewiring ..." << std::endl;
-                std::cout << "Cost near: " << near_node->g << " Cost new: " << new_state_node->g + lqr.GetTrajectoryCost(new_state_node->config, near_node->config, A, B, sim, SIM_COST_TOL) << std::endl;
+                std::cout << "Cost near: " << near_node->g << " Cost new: " << new_state_node->g + lqr.GetTrajectoryCost(new_state_node->config, near_node->config, Ad, Bd, sim, SIM_COST_TOL) << std::endl;
                 std::cout << "Parent ";
                 print_config(new_state_node->config);
                 std::cout << "Child near: ";
@@ -206,7 +206,7 @@ void RRT_Star_Planner::Rewire(Tree& tree, std::shared_ptr<Graph_Node>& new_state
                 std::cout << std::endl;
             }
                 near_node->parent = new_state_node;
-                near_node->g = new_state_node->g + lqr.GetTrajectoryCost(new_state_node->config, near_node->config, A, B, sim, SIM_COST_TOL);
+                near_node->g = new_state_node->g + lqr.GetTrajectoryCost(new_state_node->config, near_node->config, Ad, Bd, sim, SIM_COST_TOL);
         }
     }
 }
@@ -225,7 +225,7 @@ void RRT_Star_Planner::ChooseParent(Tree& tree,
             std::cout << "Current node  ";
             print_config(near_node->config);
             std::cout << "Current node cost: " << near_node->g << std::endl;
-            std::cout << "Cost to go: " << lqr.GetTrajectoryCost(near_node->config, new_state_node->config, Ad, Bd, sim, SIM_COST_TOL);
+            std::cout << "Cost to go: " << lqr.GetTrajectoryCost(near_node->config, new_state_node->config, Ad, Bd, sim, SIM_COST_TOL) << std::endl;
             current_cost = near_node->g + lqr.GetTrajectoryCost(near_node->config, new_state_node->config, Ad, Bd, sim, SIM_COST_TOL); //config_distance(near_node->config, new_state_node->config);
             std::cout << "Current cost: " << current_cost << std::endl;
             if (current_cost < new_state_node->g){
