@@ -2,6 +2,71 @@
 
 using namespace Astrodynamics;
 
+
+// Constructor
+RRT_Star_Planner::RRT_Star_Planner(State& starting_configuration, State& goal_configuration, double ***_plan, int *_plan_length) 
+: 
+count(0), 
+path_found(false), 
+update_count(0), 
+seed(42), 
+plan(_plan),
+plan_length(_plan_length),
+sim(Simulator(ClohessyWiltshire, SIM_DT)),
+Q(Eigen::MatrixXd::Identity(6, 6) * 5),
+R(Eigen::MatrixXd::Identity(6, 6)),
+lqr(LQR(Q, R))
+{
+    tree = Tree(starting_configuration);
+    start_config = starting_configuration;
+    goal_config = goal_configuration;
+    start_node = tree.list[0];
+    start_node->g = 0;
+
+    // Sampling initialization
+    if (seed == 0)
+    {
+        // From hardware
+        std::random_device rd;
+        gen = std::mt19937(rd());
+    } else 
+    {
+        gen = std::mt19937(seed);
+    }
+
+    distribution_rrt_star = std::normal_distribution<double>(0.0, RRT_STAR_STD_DEV);
+    distribution_local_bias = std::uniform_real_distribution<double>(RRT_STAR_R_MIN, RRT_STAR_R_MAX);
+    sampler = OrbitalSampler(seed);
+
+    // Dynamics initialization
+    //sim = Simulator(ClohessyWiltshire, SIM_DT);
+    GetClohessyWiltshireMatrices(A, B);
+    Simulator::Discretize(A, B, SIM_DT, Ad, Bd);
+
+    // LQR Initialization
+    //Q = Eigen::MatrixXd::Identity(6, 6) * 5;
+    //R = Eigen::MatrixXd::Identity(3, 3);
+    //lqr = LQR(Q, R);
+
+    lqr.ComputeCostMatrix(Ad, Bd, S);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // Methods
 void RRT_Star_Planner::ComputePath(std::shared_ptr<Graph_Node> node){
     std::cout << "Computing path ..." << std::endl;
@@ -328,15 +393,5 @@ void RRT_Star_Planner::_sample_local_biased_config(State& sample_state){
     if(RRT_STAR_DEBUG_LOCAL){
         print_config(sample_state);
         std::cout << "Local sampling DONE!" << std::endl;
-    }
-};
-
-void RRT_Star_Planner::_sample_random_config(State& sample_state){
-    if(RRT_STAR_DEBUG_LOCAL){
-        std::cout << "RANDOM sampling ..." << std::endl;
-    }
-    
-    for (int i = 0; i < sample_state.rows(); i++){ 
-        sample_state[i] = (double)rand() / RAND_MAX * MAX_ANGLE;
     }
 };

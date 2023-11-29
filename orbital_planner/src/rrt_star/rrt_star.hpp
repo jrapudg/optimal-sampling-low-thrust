@@ -4,6 +4,7 @@
 #include "utils.hpp"
 #include "tree.hpp"
 #include "basic_structs.hpp"
+#include "../dynamics/astrodynamics.hpp"
 #include "../dynamics/lqr.hpp"
 #include "../dynamics/simulation.hpp"
 
@@ -44,6 +45,8 @@ using namespace Optimal;
 using namespace Simulation;
 
 class RRT_Star_Planner{
+	
+	
 	public:
 		// Attributes
 		State start_config;
@@ -51,17 +54,17 @@ class RRT_Star_Planner{
 		double ***plan;
 		int *plan_length;
 		std::vector<std::shared_ptr<Graph_Node>> path;
-		int count = 0;
-		bool path_found = false;
-		int update_count = 0;
+		int count;
+		bool path_found;
+		int update_count;
 
 		// Sampling
-        int seed = 42; // Change this value as needed
+        int seed; // Change this value as needed
         // Create the Mersenne Twister engine with the fixed seed
         std::mt19937 gen;
         std::normal_distribution<double> distribution_rrt_star;
         std::uniform_real_distribution<double> distribution_local_bias;
-		OrbitalSampler sampler = OrbitalSampler(seed);
+		OrbitalSampler sampler;
 
 		// Dynamics
 		MatrixA A;
@@ -69,7 +72,7 @@ class RRT_Star_Planner{
 		MatrixA Ad;
 		MatrixB Bd;
 
-		Simulator sim = Simulator(ClohessyWiltshire, SIM_DT);
+		Simulator sim;
 
 		// LQR
 		MatrixQ Q;
@@ -77,7 +80,7 @@ class RRT_Star_Planner{
 		MatrixS S;
 		MatrixK K;
 
-		LQR lqr = LQR(Q, R);
+		LQR lqr;
 
 		// Tree
 		Tree tree;
@@ -85,30 +88,8 @@ class RRT_Star_Planner{
 		std::shared_ptr<Graph_Node> goal_node;
 		std::shared_ptr<Graph_Node> new_state_node;
 
-		// Constructor
-		RRT_Star_Planner(State& armstart_anglesV_rad, State& armgoal_anglesV_rad, 
-						 double ***_plan, int *_plan_length){
-			tree = Tree(armstart_anglesV_rad);
-			start_config = armstart_anglesV_rad;
-			goal_config = armgoal_anglesV_rad;
-			start_node = tree.list[0];
-			start_node->g = 0;
-			plan = _plan;
-			plan_length = _plan_length;
-            gen.seed(seed);
-            distribution_rrt_star = std::normal_distribution<double>(0.0, RRT_STAR_STD_DEV);
-            distribution_local_bias = std::uniform_real_distribution<double>(RRT_STAR_R_MIN, RRT_STAR_R_MAX);
 
-			// Dynamics initialization
-			GetClohessyWiltshireMatrices(A, B);
-			Simulator::Discretize(A, B, SIM_DT, Ad, Bd);
-			// LQR Initialization
-			Q = Eigen::MatrixXd::Identity(6, 6) * 5;
-			R = Eigen::MatrixXd::Identity(3, 3);
-
-			lqr = LQR(Q, R);
-			lqr.ComputeCostMatrix(Ad,Bd, S);
-		}
+		RRT_Star_Planner(State& starting_configuration, State& goal_configuration, double ***_plan, int *_plan_length);
 
 		// Methods
 		// Sample State 
@@ -144,7 +125,6 @@ class RRT_Star_Planner{
 		// Utils Methods
 		void _sample_goal_biased_config(State& sample_state, State& goal_state);
 		void _sample_local_biased_config(State& sample_state);
-		void _sample_random_config(State& sample_state);
 };
 
 #endif // RRT_STAR_H

@@ -5,9 +5,8 @@ using namespace Optimal;
 
 // Methods
 std::shared_ptr<Graph_Node> Tree::add_vertex(const State& config){
-    auto node = create_graph_node(current_index, config);
+    std::shared_ptr<Graph_Node> node = create_graph_node(current_index, config);
     list[current_index] = node;
-    //kd_tree.insert(kd_tree.root, node, 0);
     current_index ++;
     return node;
 }
