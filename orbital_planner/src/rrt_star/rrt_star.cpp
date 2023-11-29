@@ -148,8 +148,7 @@ void RRT_Star_Planner::FindPath(State& start_state, State& goal_state){
 // INTEGRATE HERE
 
 
-
-void RRT_Star_Planner::Step(MatrixA& A, MatrixB& B, const State& state, State& target_state, State& next_state, double eps=2)
+void RRT_Star_Planner::Step(MatrixA& A, MatrixB& B, const State& state, State& target_state, State& next_state, double eps)
 {
     // state: current state
     // target_state: state to drive towards

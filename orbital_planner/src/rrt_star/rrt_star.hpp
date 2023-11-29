@@ -136,7 +136,7 @@ class RRT_Star_Planner{
 
 		void ComputePath(std::shared_ptr<Graph_Node> node);
 		void SteerTowards(Tree& tree, State& sample_state, std::shared_ptr<Graph_Node>& nearest_node);
-		void Step(MatrixA& A, MatrixB& B, const State& state, State& next_state, double eps=2);
+		void Step(MatrixA& A, MatrixB& B, const State& state, State& target_state, State& next_state, double eps=2);
 
 		void FindPath(State& start_state, State& goal_state);
 
