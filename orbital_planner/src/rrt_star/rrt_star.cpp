@@ -65,6 +65,9 @@ void RRT_Star_Planner::FindPath(State& start_state, State& goal_state){
         // LQRNearest
         std::cout << "FindNearestStateTo" << std::endl;
         auto nearest_node = FindNearestStateTo(tree, state_rand, S);
+        std::cout << "Start ";
+        print_config(nearest_node->config);
+        std::cout << "Cost " << nearest_node->g << std::endl;
 
         // LQRSteer
         std::cout << "SteerTowards" << std::endl;
@@ -72,6 +75,10 @@ void RRT_Star_Planner::FindPath(State& start_state, State& goal_state){
         auto new_state = state_rand;
         std::cout << "New State ";
         print_config(new_state);
+
+        std::cout << "Start ";
+        print_config(nearest_node->config);
+        std::cout << "Cost " << nearest_node->g << std::endl;
 
         // Initialize new state as a node
         std::cout << "CreateTreeNode" << std::endl;
@@ -145,8 +152,6 @@ void RRT_Star_Planner::FindPath(State& start_state, State& goal_state){
     }
 }
 
-// INTEGRATE HERE
-
 
 void RRT_Star_Planner::Step(MatrixA& A, MatrixB& B, const State& state, State& next_state, double eps)
 {
@@ -211,15 +216,22 @@ void RRT_Star_Planner::ChooseParent(Tree& tree,
                                     std::shared_ptr<Graph_Node>& parent_node, 
                                     std::vector<std::shared_ptr<Graph_Node>>& near_nodes){
     double current_cost;
-    //new_state_node->g = std::numeric_limits<double>::max();
-    for (auto& near_node : near_nodes){
-        std::cout << "Current node cost: " << near_node->g << std::endl;
-        std::cout << "Cost to go: " << lqr.GetTrajectoryCost(near_node->config, new_state_node->config, A, B, sim, SIM_COST_TOL);
-        current_cost = near_node->g + lqr.GetTrajectoryCost(near_node->config, new_state_node->config, A, B, sim, SIM_COST_TOL); //config_distance(near_node->config, new_state_node->config);
-        std::cout << "Current cost: " << current_cost << std::endl;
-        if (current_cost < new_state_node->g){
-            parent_node = near_node;
-            new_state_node->g = current_cost;
+    std::cout << "Near nodes size: " << near_nodes.size() << std::endl;
+    for (auto near_node : near_nodes){
+        std::cout << "Loop" << std::endl;
+        print_config(near_node->config);
+        print_config(new_state_node->config);
+        if (near_node->index != new_state_node->index){
+            std::cout << "Current node  ";
+            print_config(near_node->config);
+            std::cout << "Current node cost: " << near_node->g << std::endl;
+            std::cout << "Cost to go: " << lqr.GetTrajectoryCost(near_node->config, new_state_node->config, Ad, Bd, sim, SIM_COST_TOL);
+            current_cost = near_node->g + lqr.GetTrajectoryCost(near_node->config, new_state_node->config, Ad, Bd, sim, SIM_COST_TOL); //config_distance(near_node->config, new_state_node->config);
+            std::cout << "Current cost: " << current_cost << std::endl;
+            if (current_cost < new_state_node->g){
+                parent_node = near_node;
+                new_state_node->g = current_cost;
+            }
         }
     }
 }
