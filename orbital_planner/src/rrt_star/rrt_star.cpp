@@ -148,12 +148,17 @@ void RRT_Star_Planner::FindPath(State& start_state, State& goal_state){
 // INTEGRATE HERE
 
 
-void RRT_Star_Planner::Step(MatrixA& A, MatrixB& B, const State& state, State& next_state, double eps)
+
+void RRT_Star_Planner::Step(MatrixA& A, MatrixB& B, const State& state, State& target_state, State& next_state, double eps=2)
 {
+    // state: current state
+    // target_state: state to drive towards
+    // next_state: container that will contain the new state
+    
     // sim and lqr are part of your planner class, so remove them from the arguments when you integrate
     // You should provide the A and B
     // you can change eps obviously, I put a random default value
-    int trials = 0;
+
     MatrixS S;
     Control u;
     lqr.ComputeCostMatrix(A, B, S);
@@ -161,15 +166,18 @@ void RRT_Star_Planner::Step(MatrixA& A, MatrixB& B, const State& state, State& n
 
     State current_state = state;
 
+    int trials = 0;
+
+
     // Taking norm distance from the original state
     while ((current_state.head(3) - state.head(3)).squaredNorm() <= eps)
     {
-        u = - K * current_state;
+        u = - K * (current_state - target_state);
         //Print(u);
         sim.Step(current_state, u, next_state);
         current_state = next_state;
-        std::cout << "Steering ";
-        print_config(current_state);
+        Print(current_state);
+
 
         if (trials > MAX_EXTENT_TRIALS)
             break;
@@ -179,6 +187,7 @@ void RRT_Star_Planner::Step(MatrixA& A, MatrixB& B, const State& state, State& n
 
     next_state = current_state;
 }
+
 
 void RRT_Star_Planner::SteerTowards(Tree& tree, State& sample_state, std::shared_ptr<Graph_Node>& nearest_node){
     std::cout << "From ";
