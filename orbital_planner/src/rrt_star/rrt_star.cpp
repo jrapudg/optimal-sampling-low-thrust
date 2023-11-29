@@ -2,6 +2,71 @@
 
 using namespace Astrodynamics;
 
+
+// Constructor
+RRT_Star_Planner::RRT_Star_Planner(State& starting_configuration, State& goal_configuration, double ***_plan, int *_plan_length) 
+: 
+count(0), 
+path_found(false), 
+update_count(0), 
+seed(42), 
+plan(_plan),
+plan_length(_plan_length),
+sim(Simulator(ClohessyWiltshire, SIM_DT)),
+Q(Eigen::MatrixXd::Identity(6, 6) * 5),
+R(Eigen::MatrixXd::Identity(6, 6)),
+lqr(LQR(Q, R))
+{
+    tree = Tree(starting_configuration);
+    start_config = starting_configuration;
+    goal_config = goal_configuration;
+    start_node = tree.list[0];
+    start_node->g = 0;
+
+    // Sampling initialization
+    if (seed == 0)
+    {
+        // From hardware
+        std::random_device rd;
+        gen = std::mt19937(rd());
+    } else 
+    {
+        gen = std::mt19937(seed);
+    }
+
+    distribution_rrt_star = std::normal_distribution<double>(0.0, RRT_STAR_STD_DEV);
+    distribution_local_bias = std::uniform_real_distribution<double>(RRT_STAR_R_MIN, RRT_STAR_R_MAX);
+    sampler = OrbitalSampler(seed);
+
+    // Dynamics initialization
+    //sim = Simulator(ClohessyWiltshire, SIM_DT);
+    GetClohessyWiltshireMatrices(A, B);
+    Simulator::Discretize(A, B, SIM_DT, Ad, Bd);
+
+    // LQR Initialization
+    //Q = Eigen::MatrixXd::Identity(6, 6) * 5;
+    //R = Eigen::MatrixXd::Identity(3, 3);
+    //lqr = LQR(Q, R);
+
+    lqr.ComputeCostMatrix(Ad, Bd, S);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // Methods
 void RRT_Star_Planner::ComputePath(std::shared_ptr<Graph_Node> node){
     std::cout << "Computing path ..." << std::endl;
@@ -71,8 +136,8 @@ void RRT_Star_Planner::FindPath(State& start_state, State& goal_state){
 
         // LQRSteer
         std::cout << "SteerTowards" << std::endl;
-        SteerTowards(tree, state_rand, nearest_node);
-        auto new_state = state_rand;
+        State new_state;
+        SteerTowards(tree, state_rand, nearest_node, new_state);
         std::cout << "New State ";
         print_config(new_state);
 
@@ -153,12 +218,16 @@ void RRT_Star_Planner::FindPath(State& start_state, State& goal_state){
 }
 
 
-void RRT_Star_Planner::Step(MatrixA& A, MatrixB& B, const State& state, State& next_state, double eps)
+void RRT_Star_Planner::Step(MatrixA& A, MatrixB& B, const State& state, State& target_state, State& next_state, double eps)
 {
+    // state: current state
+    // target_state: state to drive towards
+    // next_state: container that will contain the new state
+    
     // sim and lqr are part of your planner class, so remove them from the arguments when you integrate
     // You should provide the A and B
     // you can change eps obviously, I put a random default value
-    int trials = 0;
+
     MatrixS S;
     Control u;
     lqr.ComputeCostMatrix(A, B, S);
@@ -166,15 +235,18 @@ void RRT_Star_Planner::Step(MatrixA& A, MatrixB& B, const State& state, State& n
 
     State current_state = state;
 
+    int trials = 0;
+
+
     // Taking norm distance from the original state
     while ((current_state.head(3) - state.head(3)).squaredNorm() <= eps)
     {
-        u = - K * current_state;
+        u = - K * (current_state - target_state);
         //Print(u);
         sim.Step(current_state, u, next_state);
         current_state = next_state;
-        std::cout << "Steering ";
-        print_config(current_state);
+        Print(current_state);
+
 
         if (trials > MAX_EXTENT_TRIALS)
             break;
@@ -185,10 +257,11 @@ void RRT_Star_Planner::Step(MatrixA& A, MatrixB& B, const State& state, State& n
     next_state = current_state;
 }
 
-void RRT_Star_Planner::SteerTowards(Tree& tree, State& sample_state, std::shared_ptr<Graph_Node>& nearest_node){
+
+void RRT_Star_Planner::SteerTowards(Tree& tree, State& sample_state, std::shared_ptr<Graph_Node>& nearest_node, State& next_state){
     std::cout << "From ";
     print_config(nearest_node->config);
-    Step(Ad, Bd, nearest_node->config, sample_state);
+    Step(Ad, Bd, nearest_node->config, sample_state, next_state);
 }
 
 void RRT_Star_Planner::Rewire(Tree& tree, std::shared_ptr<Graph_Node>& new_state_node, std::shared_ptr<Graph_Node>& parent_node, std::vector<std::shared_ptr<Graph_Node>>& near_nodes){
@@ -332,15 +405,5 @@ void RRT_Star_Planner::_sample_local_biased_config(State& sample_state){
     if(RRT_STAR_DEBUG_LOCAL){
         print_config(sample_state);
         std::cout << "Local sampling DONE!" << std::endl;
-    }
-};
-
-void RRT_Star_Planner::_sample_random_config(State& sample_state){
-    if(RRT_STAR_DEBUG_LOCAL){
-        std::cout << "RANDOM sampling ..." << std::endl;
-    }
-    
-    for (int i = 0; i < sample_state.rows(); i++){ 
-        sample_state[i] = (double)rand() / RAND_MAX * MAX_ANGLE;
     }
 };
