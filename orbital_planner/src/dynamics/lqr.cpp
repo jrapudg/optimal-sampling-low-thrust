@@ -240,7 +240,6 @@ double LQR::GetTrajectoryCost(State starting_state, State& goal_state, MatrixA& 
 }
 
 
-/*
 int main()
 {
 
@@ -276,17 +275,17 @@ int main()
     //auto duration = duration_cast<microseconds>(stop - start);
 
 
-
-
-
-
     Simulator sim(ClohessyWiltshire, dt);
-    State starting_state = {5.0, 2.0, -1.0, -0.2, 0.0, -0.49};
-    State goal_state = {0.0,0.0,0.0,0,0,0};
-    lqr.GetTrajectoryCost(starting_state, goal_state, Ad, Bd, sim);
+    //State starting_state = {5.0, 2.0, -1.0, -0.2, 0.0, -0.49};
+    State starting_state = {-3, 2, 1.3, -0.2, 0.3, -0.2};
+    
+    //State goal_state = {0.0,0.0,0.0,0,0,0};
+    State goal_state = {-2.17495, 2.00354, 0.211689, 0.20699, -0.134153, -0.0807519};
+
+    double J = lqr.GetTrajectoryCost(starting_state, goal_state, Ad, Bd, sim);
+    std::cout << J << std::endl;
 
     return 0;
 
 }
 
-*/
