@@ -22,6 +22,7 @@
 #include <assert.h> 
 
 #include "../dynamics/astrodynamics.hpp"
+#include "../dynamics/lqr.hpp"
 
 #define GETMAPINDEX(X, Y, XSIZE, YSIZE) (Y*XSIZE + X)
 
@@ -49,6 +50,7 @@ using std::cout;
 using std::endl;
 
 using namespace Astrodynamics;
+using namespace Optimal;
 //*******************************************************************************************************************//
 //                                                                                                                   //
 //                                                GIVEN FUNCTIONS                                                    //
@@ -70,18 +72,17 @@ bool equalDoubleArrays(double* v1, double *v2, int size);
 State ForwadSim(State& q_next, State& q_current, State& q_rand, double dt);
 
 // INTEGRATE HERE
-double GetTrajectoryCost(const State& current_state, const State& new_state);
+//double GetTrajectoryCost(const State& current_state, const State& new_state);
 
-double circular_distance(double angle1, double angle2);
 
 // INTEGRATE HERE
-double config_distance(const State& a, const State& b);
+double config_distance(const State& a, const State& b, const MatrixS& S);
 
 double calculate_norm(const State& config);
 
 bool are_configs_equal(const State& config1, const State& config2);
 
-bool are_configs_close(const State& config1, const State& config2, double min_distance);
+bool are_configs_close(const State& config1, const State& config2, const MatrixS& S, double min_distance);
 
 void print_config(const State& config);
 

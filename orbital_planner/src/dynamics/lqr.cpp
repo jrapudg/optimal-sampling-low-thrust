@@ -58,10 +58,6 @@ void LQR::SetR(const MatrixR& newR) {
     R = newR;
 }
 
-
-
-
-
 void LQR::ComputeCostMatrix(const MatrixA& A, const MatrixB& B, MatrixS& S,double tol, bool DEBUG)
 {
     // TODO ensure Q is symmetric and pd, R is pd
@@ -144,18 +140,13 @@ void LQR::_SolveRicatti(const MatrixA& A, const MatrixB& B, MatrixS& S, double t
         std::cout << "Tolerance obtained: " << d << std::endl;
         std::cout << "Iteration count: " << i << std::endl;
     }
-
-
-
 }
 
-
-double LQR::ComputeCostToGo(State state, State target_state, MatrixS& S)
+double LQR::ComputeCostToGo(State state, State target_state, const MatrixS& S)
 {
     State xbar = target_state - state;
     return  (xbar.transpose() * S * xbar)(0,0);
 }
-
 
 MatrixK LQR::ComputeOptimalGain(MatrixA& A, MatrixB& B, MatrixS& S)
 {
@@ -164,18 +155,15 @@ MatrixK LQR::ComputeOptimalGain(MatrixA& A, MatrixB& B, MatrixS& S)
     return (r_LLT).solve(Bt * S * A);
 }
 
-
 Control LQR::ComputeOptimalPolicy(State current_state, MatrixA& A, MatrixB& B, MatrixS& S)
 {
     return - ComputeOptimalGain(A, B, S) * current_state;
 }
 
-
 double LQR::QuadraticCost(State& state, Control& control)
 {
     return (state.transpose() * Q * state + control.transpose() * R * control)(0);
 }
-
 
 double LQR::GetTrajectoryCost(State starting_state, State& goal_state, MatrixA& A, MatrixB& B, Simulation::Simulator& sim, double tol)
 {
@@ -232,8 +220,6 @@ double LQR::GetTrajectoryCost(State starting_state, State& goal_state, MatrixA& 
     }
 
     return J;
-
-
 
 }
 

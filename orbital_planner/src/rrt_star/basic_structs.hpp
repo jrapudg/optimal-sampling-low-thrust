@@ -19,7 +19,6 @@ struct Graph_Node {
     double g = std::numeric_limits<double>::max();
     double h = std::numeric_limits<double>::max();
     std::shared_ptr<Graph_Node> parent;
-    std::vector<int> neighbors;
 
     // Constructor
     Graph_Node(int _i, const State& _config) : index(_i), config(_config) {

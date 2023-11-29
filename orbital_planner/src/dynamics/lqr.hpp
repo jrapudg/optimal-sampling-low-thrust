@@ -19,11 +19,8 @@ class LQR
 {
 
     public:
-
-
         // Constructors
         LQR(const MatrixQ& Q, const MatrixR& R);
-
 
         // Getters
         const MatrixQ& GetQ() const;
@@ -33,11 +30,9 @@ class LQR
         void SetQ(const MatrixQ& newQ);
         void SetR(const MatrixR& newR);
 
-
-
         void ComputeCostMatrix(const MatrixA& A, const MatrixB& B, MatrixS& S, double tol=1e-12, bool DEBUG=false);
 
-        double ComputeCostToGo(State state, State target_state, MatrixS& S);
+        static double ComputeCostToGo(State state, State target_state, const MatrixS& S);
 
         Control ComputeOptimalPolicy(State current_state, MatrixA& A, MatrixB& B, MatrixS& S);
 

@@ -43,13 +43,15 @@ bool are_configs_equal(const State& config1, const State& config2) {
     return config1.isApprox(config2, 0.0);  // Using Eigen's isApprox function with zero tolerance for exact equality.
 }
 
-bool are_configs_close(const State& config1, const State& config2, double min_distance) {
-    return config_distance(config1, config2) <= min_distance;  // Simplified to a single line.
+bool are_configs_close(const State& config1, const State& config2, const MatrixS& S, double min_distance) {
+    return config_distance(config1, config2, S) <= min_distance;  // Simplified to a single line.
 }
 
+/*
 double GetTrajectoryCost(const State& state, const State& control){
 	return config_distance(state, control);
 }
+*/
 
 double circular_distance(double angle1, double angle2) {
 	// Function to calculate the circular distance between two angles in radians
@@ -57,15 +59,8 @@ double circular_distance(double angle1, double angle2) {
     return MIN(diff, abs(2*M_PI - diff));
 };
 
-double config_distance(const State& a, const State& b) {
-    // Using rows() to determine the size of the matrix.
-    int size = a.rows();
-
-    double dist = 0;
-    for (int i = 0; i < size; ++i) {
-        dist += circular_distance(a(i), b(i));
-    }
-    return dist;
+double config_distance(const State& a, const State& b, const MatrixS& S) {
+    return LQR::ComputeCostToGo(a, b, S);
 };
 
 double calculate_norm(const State& config) {

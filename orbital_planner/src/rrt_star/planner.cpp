@@ -50,13 +50,20 @@ static void plannerRRTStar(
 //*******************************************************************************************************************//
 
 int main(int argc, char** argv) {
-	const int numOfDOFs = std::stoi(argv[3]);
 	double* startPos = doubleArrayFromString(argv[1]);
 	double* goalPos = doubleArrayFromString(argv[2]);
-	string outputFile = argv[4];
+
+	string outputFile = argv[3];
 
 	State startPos_vec = convertArrayToState(startPos);
 	State goalPos_vec = convertArrayToState(goalPos);
+
+	std::cout << "Start ";
+	print_config(startPos_vec);
+	std::cout << "Goal ";
+	print_config(goalPos_vec);
+
+	const int numOfDOFs = startPos_vec.rows();
 
 	///////////////////////////////////////
 	//// Feel free to modify anything below. Be careful modifying anything above.

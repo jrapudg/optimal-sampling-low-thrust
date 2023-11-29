@@ -1,12 +1,7 @@
-
 #include "astrodynamics.hpp"
-
-
 
 namespace Astrodynamics
 {
-
-
 
 bool CheckOrbitalElements(const StateOE& orbital_elements)
 {
