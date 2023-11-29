@@ -135,7 +135,7 @@ class RRT_Star_Planner{
 		void Rewire(Tree& tree, std::shared_ptr<Graph_Node>& new_state_node, std::shared_ptr<Graph_Node>& parent_node, std::vector<std::shared_ptr<Graph_Node>>& near_nodes);
 
 		void ComputePath(std::shared_ptr<Graph_Node> node);
-		void SteerTowards(Tree& tree, State& sample_state, std::shared_ptr<Graph_Node>& nearest_node);
+		void SteerTowards(Tree& tree, State& sample_state, std::shared_ptr<Graph_Node>& nearest_node, State& next_state);
 		void Step(MatrixA& A, MatrixB& B, const State& state, State& target_state, State& next_state, double eps=2);
 
 		void FindPath(State& start_state, State& goal_state);

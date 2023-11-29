@@ -68,8 +68,8 @@ void RRT_Star_Planner::FindPath(State& start_state, State& goal_state){
 
         // LQRSteer
         std::cout << "SteerTowards" << std::endl;
-        SteerTowards(tree, state_rand, nearest_node);
-        auto new_state = state_rand;
+        State new_state;
+        SteerTowards(tree, state_rand, nearest_node, new_state);
         std::cout << "New State ";
         print_config(new_state);
 
@@ -188,10 +188,10 @@ void RRT_Star_Planner::Step(MatrixA& A, MatrixB& B, const State& state, State& t
 }
 
 
-void RRT_Star_Planner::SteerTowards(Tree& tree, State& sample_state, std::shared_ptr<Graph_Node>& nearest_node){
+void RRT_Star_Planner::SteerTowards(Tree& tree, State& sample_state, std::shared_ptr<Graph_Node>& nearest_node, State& next_state){
     std::cout << "From ";
     print_config(nearest_node->config);
-    Step(Ad, Bd, nearest_node->config, sample_state);
+    Step(Ad, Bd, nearest_node->config, sample_state, next_state);
 }
 
 void RRT_Star_Planner::Rewire(Tree& tree, std::shared_ptr<Graph_Node>& new_state_node, std::shared_ptr<Graph_Node>& parent_node, std::vector<std::shared_ptr<Graph_Node>>& near_nodes){
