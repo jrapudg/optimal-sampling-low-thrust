@@ -28,10 +28,17 @@ static void plannerRRTStar(
 	State start_state_vec = convertArrayToState(start_state);
 	State goal_state_vec = convertArrayToState(goal_state);
 
-    std::cout << std::endl << "******RRT-STAR PLANNER*****" << std::endl;
+
+
+    std::cout << std::endl << "******WELCOME TO RRT*-LQR MY FRIEND*****" << std::endl;
+
+
 	RRT_Star_Planner planner_rrt_star = RRT_Star_Planner(start_state_vec, 
 														 goal_state_vec, 
 														 plan, planlength);
+
+
+
 
 	std::cout << "----BUILDING TREE----" << std::endl;
 	planner_rrt_star.FindPath(start_state_vec, goal_state_vec);
@@ -71,12 +78,19 @@ int main(int argc, char** argv) {
 	double** plan = NULL;
 	int planlength = 0;
 
-    // Call the corresponding planner function
+
+
+
+
     plannerRRTStar(startPos, goalPos, &plan, &planlength);
 
-	//// Feel free to modify anything above.
-	//// If you modify something below, please change it back afterwards as my 
-	//// grading script will not work and you will recieve a 0.
+
+
+
+
+
+
+
 	///////////////////////////////////////
 
     // Your solution's path should start with startPos and end with goalPos
@@ -86,8 +100,6 @@ int main(int argc, char** argv) {
 	}
 
 	// * Saves the solution to output file
-	// * Do not modify the output log file output format as it is required for visualization
-	// * and for grading.
 
 	std::ofstream m_log_fstream;
 	m_log_fstream.open(outputFile, std::ios::trunc); // Creates new or replaces existing file
