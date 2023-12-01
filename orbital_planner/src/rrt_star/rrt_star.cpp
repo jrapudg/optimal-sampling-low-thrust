@@ -14,9 +14,10 @@ plan(_plan),
 plan_length(_plan_length),
 sim(Simulator(ClohessyWiltshire, SIM_DT)),
 Q(Eigen::MatrixXd::Identity(6, 6) * 5),
-R(Eigen::MatrixXd::Identity(6, 6)),
+R(Eigen::MatrixXd::Identity(3, 3)),
 lqr(LQR(Q, R))
 {
+    std::cout << "Status query" << std::endl;
     tree = Tree(starting_configuration);
     start_config = starting_configuration;
     goal_config = goal_configuration;
@@ -43,12 +44,15 @@ lqr(LQR(Q, R))
     GetClohessyWiltshireMatrices(A, B);
     Simulator::Discretize(A, B, SIM_DT, Ad, Bd);
 
+
     // LQR Initialization
     //Q = Eigen::MatrixXd::Identity(6, 6) * 5;
     //R = Eigen::MatrixXd::Identity(3, 3);
     //lqr = LQR(Q, R);
 
     lqr.ComputeCostMatrix(Ad, Bd, S);
+
+    std::cout << "finished initialization" << std::endl;
 }
 
 
