@@ -51,21 +51,10 @@ lqr(LQR(Q, R))
     //lqr = LQR(Q, R);
 
     lqr.ComputeCostMatrix(Ad, Bd, S);
+    K = lqr.ComputeOptimalGain(Ad, Bd, S);
 
     std::cout << "finished initialization" << std::endl;
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -107,29 +96,49 @@ void RRT_Star_Planner::ComputePath(std::shared_ptr<Graph_Node> node){
     *plan_length = path.size();
 }
 
+
+
 void RRT_Star_Planner::FindPath(State& start_state, State& goal_state){
     auto start = std::chrono::high_resolution_clock::now();
     State state_rand;
     std::shared_ptr<Graph_Node> parent_node;
 
-    for (int i = 0; i < RRT_STAR_NUM_ITER; i++) { 
+
+    for (int i = 0; i < 5; i++) { // RRT_STAR_NUM_ITER
+        
+        
+        // Sample 
+        SampleConfiguration(state_rand, goal_state, path_found);
+        Print(state_rand, "Sampled configuration");
+
+
+        // LQRNearest
+        // TODOAFTER For other dynamics, locally linearize around sampled_state and 0 control 
+        // Then, compute the S matrix for the search of the nearest node
+        std::shared_ptr<Graph_Node> nearest_node = FindNearestStateTo(tree, state_rand, S);
+        Print(nearest_node->config, "FindNearestStateTo node");
+        std::cout << "Cost of nearest node: " << nearest_node->g << std::endl;
+
+        // LQRSteer
+        // This new state represents the end of a trajectory executed with the LQR-Policy generated from the LQRNearest above with a pre-specified step size based on the cost
+        // TODO Compute the optimal gain K based on the S
+        State new_state;
+        SteerTowards(tree, state_rand, nearest_node, new_state);
+        Print(new_state, "New state after steering");
+
+
+        std::cout << "--------" << std::endl;
+
+    }
+
+    /*for (int i = 0; i < RRT_STAR_NUM_ITER; i++) { 
         // Sample 
         std::cout << "Sample Configuration" << std::endl;
         SampleConfiguration(state_rand, goal_state, path_found);
-        std::cout << "Sample Rand ";
+        std::cout << "Sample ";
         print_config(state_rand);
 
-        // Add node rejection latter
-        /*
-        if (path_found & RRT_STAR_NODE_REJECTION_ACTIVE){
-            double cost_to_goal = config_distance(sample_state, goal_node->config);
-            double cost_to_start = config_distance(sample_state, start_node->config); 
-            if (cost_to_goal + cost_to_start > goal_node->g){
-                //std::cout << "Sample rejected " << i << std::endl;
-                continue;
-            }
-        }
-        */
+
 
         // LQRNearest
         std::cout << "FindNearestStateTo" << std::endl;
@@ -218,11 +227,21 @@ void RRT_Star_Planner::FindPath(State& start_state, State& goal_state){
             return;
         }
         std::cout << "Nodes count: " << tree.list.size() << std::endl;
+    }*/
+}
+// Add node rejection latter
+/*
+if (path_found & RRT_STAR_NODE_REJECTION_ACTIVE){
+    double cost_to_goal = config_distance(sample_state, goal_node->config);
+    double cost_to_start = config_distance(sample_state, start_node->config); 
+    if (cost_to_goal + cost_to_start > goal_node->g){
+        //std::cout << "Sample rejected " << i << std::endl;
+        continue;
     }
 }
+*/
 
-
-void RRT_Star_Planner::Step(MatrixA& A, MatrixB& B, const State& state, State& target_state, State& next_state, double eps)
+void RRT_Star_Planner::Step(MatrixA& A, MatrixB& B, MatrixK& K, const State& state, State& target_state, State& next_state)
 {
     // state: current state
     // target_state: state to drive towards
@@ -232,18 +251,22 @@ void RRT_Star_Planner::Step(MatrixA& A, MatrixB& B, const State& state, State& t
     // You should provide the A and B
     // you can change eps obviously, I put a random default value
 
-    MatrixS S;
+    //MatrixS S;
+    
+    //lqr.ComputeCostMatrix(A, B, S);
+    //K = lqr.ComputeOptimalGain(A, B, S);
+
     Control u;
-    lqr.ComputeCostMatrix(A, B, S);
-    MatrixK K = lqr.ComputeOptimalGain(A, B, S);
 
     State current_state = state;
 
-    int trials = 0;
+    // The "epsilon" here should be the dt here, that is already selected 
+    u = - K * (current_state - target_state);
+    sim.Step(current_state, u, next_state);
 
 
     // Taking norm distance from the original state
-    while ((current_state.head(3) - state.head(3)).squaredNorm() <= eps)
+    /*while ((current_state.head(3) - state.head(3)).squaredNorm() <= eps)
     {
         u = - K * (current_state - target_state);
         //Print(u);
@@ -251,21 +274,14 @@ void RRT_Star_Planner::Step(MatrixA& A, MatrixB& B, const State& state, State& t
         current_state = next_state;
         Print(current_state);
 
-
-        if (trials > MAX_EXTENT_TRIALS)
-            break;
-
-        trials ++;
     }
-
-    next_state = current_state;
+    next_state = current_state;*/
 }
 
 
 void RRT_Star_Planner::SteerTowards(Tree& tree, State& sample_state, std::shared_ptr<Graph_Node>& nearest_node, State& next_state){
-    std::cout << "From ";
-    print_config(nearest_node->config);
-    Step(Ad, Bd, nearest_node->config, sample_state, next_state);
+    Print(nearest_node->config, "Steering from");
+    Step(Ad, Bd, K, nearest_node->config, sample_state, next_state);
 }
 
 void RRT_Star_Planner::Rewire(Tree& tree, std::shared_ptr<Graph_Node>& new_state_node, std::shared_ptr<Graph_Node>& parent_node, std::vector<std::shared_ptr<Graph_Node>>& near_nodes){
@@ -321,7 +337,6 @@ void RRT_Star_Planner::AddToTree(Tree& tree, std::shared_ptr<Graph_Node> state_n
     tree.add_edge(state_node, parent_state_node);
 };
 
-// INTEGRATE HERE
 bool RRT_Star_Planner::ValidState(State& state){
     return true;
 }
@@ -336,16 +351,21 @@ std::vector<std::shared_ptr<Graph_Node>> RRT_Star_Planner::FindNearestStates(Tre
 
 // INTEGRATION OF ORBITAL SAMPLER
 void RRT_Star_Planner::SampleConfiguration(State& sample_state, State& goal_state, bool& path_found){
-    // Generate a random number between 0 and 1
-    double p_value = static_cast<double>(rand()) / RAND_MAX;
-    if (RRT_STAR_LOCAL_BIAS_ACTIVE & (p_value < RRT_STAR_LOCAL_BIASED) & path_found){
-        _sample_local_biased_config(sample_state);
-    }
-    else{
-        //_sample_random_config(sample_state);
-        sampler.SampleCW(sample_state);
-    }
+    sampler.SampleCW(sample_state);
 }
+
+
+
+
+// Generate a random number between 0 and 1
+/*double p_value = static_cast<double>(rand()) / RAND_MAX;
+if (RRT_STAR_LOCAL_BIAS_ACTIVE & (p_value < RRT_STAR_LOCAL_BIASED) & path_found){
+    _sample_local_biased_config(sample_state);
+}
+else{
+    //_sample_random_config(sample_state);
+    sampler.SampleCW(sample_state);
+}*/
 
 // Utils Methods
 void RRT_Star_Planner::_sample_goal_biased_config(State& sample_state, State& goal_state){

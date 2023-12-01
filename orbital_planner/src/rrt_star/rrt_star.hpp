@@ -36,7 +36,7 @@
 #define RRT_STAR_NODE_REJECTION_ACTIVE true //not implemented
 #define RRT_STAR_LOCAL_BIAS_ACTIVE true 
 
-#define SIM_DT 0.1
+#define SIM_DT 1.0
 #define SIM_COST_TOL 1.0
 #define MAX_EXTENT_TRIALS 80
 
@@ -117,7 +117,7 @@ class RRT_Star_Planner{
 
 		void ComputePath(std::shared_ptr<Graph_Node> node);
 		void SteerTowards(Tree& tree, State& sample_state, std::shared_ptr<Graph_Node>& nearest_node, State& next_state);
-		void Step(MatrixA& A, MatrixB& B, const State& state, State& target_state, State& next_state, double eps=2);
+		void Step(MatrixA& A, MatrixB& B, MatrixK& K, const State& state, State& target_state, State& next_state);
 
 		void FindPath(State& start_state, State& goal_state);
 
