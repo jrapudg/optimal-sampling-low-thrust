@@ -238,7 +238,6 @@ void NonlinearRelativeKeplerianDynamics(const State& state, const Control& u, St
 
 
 
-
 // Assumes circular orbit and distance between two spacecraft is << distance to central body
 void ClohessyWiltshire(const State &x, const Control &u, State &next_state)
 {

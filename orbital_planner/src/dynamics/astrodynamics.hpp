@@ -60,6 +60,8 @@ void CentralBodyScaled(const State& state, const Control& control, State& state_
 
 void CR3BP(const State& state, const Control& control, State& state_dot);
 
+void NonlinearRelativeKeplerianDynamics(const State& state, const Control& u, State& next_state);
+
 void ClohessyWiltshire(const State& state, const Control& control, State& next_state);
 
 void GetClohessyWiltshireMatrices(MatrixA& A, MatrixB& B, double m = 100.0, double sma = LEO_MAX);

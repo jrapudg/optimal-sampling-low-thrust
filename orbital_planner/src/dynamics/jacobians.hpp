@@ -5,6 +5,13 @@
 
 // Do not use the namespace Astrodynamics
 
+// Nonlinear relative dynamics in LVLH frame
+void GetJacobiansNRKD(Astrodynamics::MatrixA& Ac, Astrodynamics::MatrixB& Bc, const Astrodynamics::State& x, const Astrodynamics::Control& u, const double sma);
+
+void GetA_NRKD(Astrodynamics::MatrixA& A, const Astrodynamics::State& x, const double sma, const double m);
+void GetB_NRKD(Astrodynamics::MatrixB& B, const double m);
+
+
 //CR3BP continuous dynamics jacobians for the Earth-Moon system
 void GetJacobiansCR3BP(Astrodynamics::MatrixA& Ac, Astrodynamics::MatrixB& Bc, const Astrodynamics::State& x, const Astrodynamics::Control& u);
 
