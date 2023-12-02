@@ -44,11 +44,12 @@ typedef Eigen::Matrix<double, 6, 3> MatrixB;
 
 
 // Default maximum distance and velocities for unform sampling in the LVLH frame (Clohessy-Wiltshire)
-#define MAX_DIST_LVLH 20.0
-#define MAX_VEL_LVLH 2.0
+#define MAX_DIST_LVLH 5.0
+#define MAX_VEL_LVLH 1.5
 
 // Assumed default mass of the spacecraft
 #define DEFAULT_MASS 100.0
+#define ASSUMED_SMA LEO_MAX
 
 
 // Dynamics function 

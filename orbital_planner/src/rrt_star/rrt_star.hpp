@@ -15,13 +15,13 @@
 #define MAX_ANGLE 2*M_PI
 #define RRT_STAR_NUM_ITER 1000000 //500000
 #define RRT_STAR_STEP_EXTEND 1.0 //4.0
-#define RRT_STAR_GOAL_TOL 0.1 //2.0
+#define RRT_STAR_GOAL_TOL 10.0 //2.0
 
 #define RRT_STAR_DEBUG_REWIRING false
 #define RRT_STAR_DEBUG_LOCAL false
 #define RRT_STAR_DEBUG_INTER false
 
-#define RRT_STAR_GOAL_BIASED 0.5 //0.5
+#define RRT_STAR_GOAL_BIASED 0.2 //0.5
 #define RRT_STAR_LOCAL_BIASED 0.2 //0.5
 #define RRT_STAR_TIME_MAX 2990000000000000
 #define RRT_STAR_REF_MAX 49000000000000000
@@ -29,14 +29,14 @@
 #define RRT_STAR_R_MIN 0.1*RRT_STAR_STEP_EXTEND
 #define RRT_STAR_R_MAX 0.5*RRT_STAR_STEP_EXTEND
 
-#define RRT_STAR_REW_RADIUS 10000.0
+#define RRT_STAR_NEW_RADIUS 10000.0
 #define RRT_STAR_K_NEIGHBORS 10
 
 #define RRT_STAR_KEEP_UNTIL_TIME_MAX false
 #define RRT_STAR_NODE_REJECTION_ACTIVE true //not implemented
 #define RRT_STAR_LOCAL_BIAS_ACTIVE true 
 
-#define SIM_DT 1.0
+#define SIM_DT 0.5
 #define SIM_COST_TOL 1.0
 #define MAX_EXTENT_TRIALS 80
 
@@ -110,10 +110,10 @@ class RRT_Star_Planner{
 		void AddToTree(Tree& tree, std::shared_ptr<Graph_Node> state_node, std::shared_ptr<Graph_Node> parent_state_node);
 		
 		// Choose Parent
-		void ChooseParent(Tree& tree, std::shared_ptr<Graph_Node>& new_state_node, std::shared_ptr<Graph_Node>& parent_node, std::vector<std::shared_ptr<Graph_Node>>& near_nodes);
+		void ChooseParent(Tree& tree, std::shared_ptr<Graph_Node>& new_state_node, std::shared_ptr<Graph_Node>& parent_node, std::vector<std::shared_ptr<Graph_Node>>& near_nodes, MatrixS& S_new);
 
 		// Rewire function
-		void Rewire(Tree& tree, std::shared_ptr<Graph_Node>& new_state_node, std::shared_ptr<Graph_Node>& parent_node, std::vector<std::shared_ptr<Graph_Node>>& near_nodes);
+		void Rewire(Tree& tree, std::shared_ptr<Graph_Node>& new_state_node, std::shared_ptr<Graph_Node>& parent_node, std::vector<std::shared_ptr<Graph_Node>>& near_nodes, MatrixS& S_new);
 
 		void ComputePath(std::shared_ptr<Graph_Node> node);
 		void SteerTowards(Tree& tree, State& sample_state, std::shared_ptr<Graph_Node>& nearest_node, State& next_state);

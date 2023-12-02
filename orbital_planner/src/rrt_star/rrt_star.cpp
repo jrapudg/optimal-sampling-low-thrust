@@ -40,20 +40,15 @@ lqr(LQR(Q, R))
     sampler = OrbitalSampler(seed);
 
     // Dynamics initialization
-    //sim = Simulator(ClohessyWiltshire, SIM_DT);
     GetClohessyWiltshireMatrices(A, B);
     Simulator::Discretize(A, B, SIM_DT, Ad, Bd);
 
 
     // LQR Initialization
-    //Q = Eigen::MatrixXd::Identity(6, 6) * 5;
-    //R = Eigen::MatrixXd::Identity(3, 3);
-    //lqr = LQR(Q, R);
-
     lqr.ComputeCostMatrix(Ad, Bd, S);
     K = lqr.ComputeOptimalGain(Ad, Bd, S);
 
-    std::cout << "finished initialization" << std::endl;
+    std::cout << "Finished initialization." << std::endl;
 }
 
 
@@ -65,16 +60,13 @@ void RRT_Star_Planner::ComputePath(std::shared_ptr<Graph_Node> node){
     std::cout << "Computing path ..." << std::endl;
     int DOF = start_node->config.rows();
     path.clear();
-    std::cout << "dof: " << DOF << std::endl;
 
     path.insert(path.begin(), node);
 
     while(node->parent != start_node){
-        print_config(node->config);
-        std::cout << "Cost: " <<  node->g << std::endl;
+        Print(node->config, "State");
         node = node->parent;
-        std::cout << "Parent ";
-        print_config(node->config);
+        //Print(node->config, "Parent");
         path.insert(path.begin(), node);
     }
     path.insert(path.begin(), start_node);
@@ -89,9 +81,9 @@ void RRT_Star_Planner::ComputePath(std::shared_ptr<Graph_Node> node){
         for(int j = 0; j < DOF; j++){
             (*plan)[i][j] = (path[i])->config[j];
         }
-        if (i != 0){
+        /*if (i != 0){
             (path[i])->g = (path[i])->parent->g + lqr.GetTrajectoryCost((path[i])->parent->config, path[i]->config, Ad, Bd, sim, SIM_COST_TOL);
-        }
+        }*/
     }    
     *plan_length = path.size();
 }
@@ -99,35 +91,107 @@ void RRT_Star_Planner::ComputePath(std::shared_ptr<Graph_Node> node){
 
 
 void RRT_Star_Planner::FindPath(State& start_state, State& goal_state){
+    
     auto start = std::chrono::high_resolution_clock::now();
     State state_rand;
     std::shared_ptr<Graph_Node> parent_node;
 
 
-    for (int i = 0; i < 5; i++) { // RRT_STAR_NUM_ITER
+    for (int i = 0; i < RRT_STAR_NUM_ITER; i++) { // RRT_STAR_NUM_ITER
         
-        
+        std::cout << "Iteration " << i << std::endl;
+
+
+
         // Sample 
         SampleConfiguration(state_rand, goal_state, path_found);
-        Print(state_rand, "Sampled configuration");
+        //Print(state_rand, "Sampled configuration");
+
+        // TO DELETE AFTER 
+        /*State test;
+        SampleConfiguration(test, goal_state, path_found);
+        CreateTreeNode(tree, test);*/
 
 
         // LQRNearest
-        // TODOAFTER For other dynamics, locally linearize around sampled_state and 0 control 
-        // Then, compute the S matrix for the search of the nearest node
+        // TODO For other dynamics, locally linearize around sampled_state and 0 control 
+        // TODO Then, compute the S matrix for the search of the nearest node
         std::shared_ptr<Graph_Node> nearest_node = FindNearestStateTo(tree, state_rand, S);
-        Print(nearest_node->config, "FindNearestStateTo node");
-        std::cout << "Cost of nearest node: " << nearest_node->g << std::endl;
+        //Print(nearest_node->config, "FindNearestStateTo node");
+        //std::cout << "Cost of nearest node: " << nearest_node->g << std::endl;
+
+
 
         // LQRSteer
         // This new state represents the end of a trajectory executed with the LQR-Policy generated from the LQRNearest above with a pre-specified step size based on the cost
-        // TODO Compute the optimal gain K based on the S
+        // TODO Compute the optimal gain K based on the S from sampled state
         State new_state;
         SteerTowards(tree, state_rand, nearest_node, new_state);
-        Print(new_state, "New state after steering");
+        //Print(new_state, "New state after steering");
 
 
-        std::cout << "--------" << std::endl;
+
+        // Initialize new state as a node
+        //std::cout << "CreateTreeNode" << std::endl;
+        new_state_node = CreateTreeNode(tree, new_state);
+
+
+
+        // LQRNear
+        // Setting up local LQR cost and policy on new_state
+        // TODO Linearize around new_state (A and B)
+        // TODO Compute subsequent S and K (around new_state as mentioned above)
+        //std::cout << "FindNearestStates -" << std::endl;
+        std::vector<std::shared_ptr<Graph_Node>> near_nodes = FindNearestStates(tree, new_state, S);
+
+
+
+        // ChooseParent
+        // Should give the newly computed S
+        //std::cout << "ChooseParent" << std::endl;
+        ChooseParent(tree, new_state_node, parent_node, near_nodes, S);
+        //Print(parent_node->config, "Parent");
+        //std::cout << "Node cost with that parent " << new_state_node->g << std::endl;
+
+
+        // AddToTree
+        //std::cout << "AddToTree" << std::endl;
+        AddToTree(tree, new_state_node, parent_node);
+        // For now, we assume collision-free. For collision-checking, just check along a spline interpolation of the state instead? 
+        // Or more discrete simulation? 
+
+        // Rewiring
+        //std::cout << "Rewiring" << std::endl;
+        //Rewire(tree, new_state_node, parent_node, near_nodes);
+
+        std::cout << "Close to the goal mf: " << config_distance(new_state_node->config, goal_config, S) << std::endl;
+        if (!path_found && are_configs_close(new_state_node->config, goal_config, S, RRT_STAR_GOAL_TOL))
+        {
+
+
+            std::cout << "Goal Node Reached with " << i + 1 << " samples!" << std::endl;
+        
+            goal_node = CreateTreeNode(tree, goal_config);
+            goal_node->g = 0;
+            AddToTree(tree, goal_node, new_state_node);
+            
+            std::cout << "GOAL COST: " << goal_node->g << std::endl;
+
+
+            ComputePath(goal_node);
+            std::cout << "PATH SIZE: " << path.size() << std::endl;
+            path_found = true;
+            std::cout << "RESULT -> SOLUTION FOUND!" << std::endl;
+            auto end = std::chrono::high_resolution_clock::now();
+            auto time_elapsed_milli = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+            std::cout << "TIME: " << (double) time_elapsed_milli/1000 << std::endl;
+            break;
+
+        }
+
+
+
+        //std::cout << "--------" << std::endl;
 
     }
 
@@ -247,87 +311,96 @@ void RRT_Star_Planner::Step(MatrixA& A, MatrixB& B, MatrixK& K, const State& sta
     // target_state: state to drive towards
     // next_state: container that will contain the new state
     
-    // sim and lqr are part of your planner class, so remove them from the arguments when you integrate
     // You should provide the A and B
     // you can change eps obviously, I put a random default value
 
     //MatrixS S;
-    
     //lqr.ComputeCostMatrix(A, B, S);
     //K = lqr.ComputeOptimalGain(A, B, S);
 
     Control u;
-
     State current_state = state;
 
     // The "epsilon" here should be the dt here, that is already selected 
     u = - K * (current_state - target_state);
     sim.Step(current_state, u, next_state);
-
-
-    // Taking norm distance from the original state
-    /*while ((current_state.head(3) - state.head(3)).squaredNorm() <= eps)
-    {
-        u = - K * (current_state - target_state);
-        //Print(u);
-        sim.Step(current_state, u, next_state);
-        current_state = next_state;
-        Print(current_state);
-
-    }
-    next_state = current_state;*/
 }
 
 
 void RRT_Star_Planner::SteerTowards(Tree& tree, State& sample_state, std::shared_ptr<Graph_Node>& nearest_node, State& next_state){
-    Print(nearest_node->config, "Steering from");
+    //Print(nearest_node->config, "Steering from");
     Step(Ad, Bd, K, nearest_node->config, sample_state, next_state);
 }
 
-void RRT_Star_Planner::Rewire(Tree& tree, std::shared_ptr<Graph_Node>& new_state_node, std::shared_ptr<Graph_Node>& parent_node, std::vector<std::shared_ptr<Graph_Node>>& near_nodes){
-    for (auto& near_node : near_nodes){
-        if ((near_node != new_state_node) & (near_node != parent_node) & 
-            (near_node->g > new_state_node->g + lqr.GetTrajectoryCost(new_state_node->config, near_node->config, Ad, Bd, sim, SIM_COST_TOL))){
-            
-            if (RRT_STAR_DEBUG_REWIRING){
-                std::cout << "Rewiring ..." << std::endl;
-                std::cout << "Cost near: " << near_node->g << " Cost new: " << new_state_node->g + lqr.GetTrajectoryCost(new_state_node->config, near_node->config, Ad, Bd, sim, SIM_COST_TOL) << std::endl;
-                std::cout << "Parent ";
-                print_config(new_state_node->config);
-                std::cout << "Child near: ";
-                print_config(near_node->config);
-                std::cout << std::endl;
-            }
-                near_node->parent = new_state_node;
-                near_node->g = new_state_node->g + lqr.GetTrajectoryCost(new_state_node->config, near_node->config, Ad, Bd, sim, SIM_COST_TOL);
-        }
-    }
-}
+
 
 void RRT_Star_Planner::ChooseParent(Tree& tree, 
                                     std::shared_ptr<Graph_Node>& new_state_node, 
                                     std::shared_ptr<Graph_Node>& parent_node, 
-                                    std::vector<std::shared_ptr<Graph_Node>>& near_nodes){
+                                    std::vector<std::shared_ptr<Graph_Node>>& near_nodes,
+                                    MatrixS& S_new)
+{
+    // New state node is exactly the new node added to the tree
+    // Parent node is a container for the chosen parent 
+    // near_nodes are the nearest nodes found around new_state_node
+    // S_new is the cost matrix around new_state_node
+    
     double current_cost;
-    std::cout << "Near nodes size: " << near_nodes.size() << std::endl;
-    for (auto near_node : near_nodes){
-        std::cout << "Loop" << std::endl;
-        print_config(near_node->config);
-        print_config(new_state_node->config);
-        if (near_node->index != new_state_node->index){
-            std::cout << "Current node  ";
-            print_config(near_node->config);
-            std::cout << "Current node cost: " << near_node->g << std::endl;
-            std::cout << "Cost to go: " << lqr.GetTrajectoryCost(near_node->config, new_state_node->config, Ad, Bd, sim, SIM_COST_TOL) << std::endl;
-            current_cost = near_node->g + lqr.GetTrajectoryCost(near_node->config, new_state_node->config, Ad, Bd, sim, SIM_COST_TOL); //config_distance(near_node->config, new_state_node->config);
-            std::cout << "Current cost: " << current_cost << std::endl;
-            if (current_cost < new_state_node->g){
+
+    for (auto near_node : near_nodes)
+    {
+        if (near_node->index != new_state_node->index)
+        {
+
+            // The cost here should the cost-to-go
+            current_cost = near_node->g + config_distance(near_node->config, new_state_node->config, S);
+
+            if (current_cost < new_state_node->g)
+            {   
+                // Changing the cost and parent here
                 parent_node = near_node;
                 new_state_node->g = current_cost;
             }
         }
+
+    }
+ 
+}
+
+
+void RRT_Star_Planner::Rewire(Tree& tree, 
+                            std::shared_ptr<Graph_Node>& new_state_node, 
+                            std::shared_ptr<Graph_Node>& parent_node, 
+                            std::vector<std::shared_ptr<Graph_Node>>& near_nodes,
+                            MatrixS& S_new)
+{
+    for (auto& near_node : near_nodes)
+    {
+        
+        // Not sure if we have to linearize around near_node then compute S_near here (and not use the S_new)
+        
+        if ((near_node != new_state_node) && (near_node != parent_node) && 
+            (near_node->g > new_state_node->g + config_distance(new_state_node->config, near_node->config, S)))
+        {
+            
+            if (RRT_STAR_DEBUG_REWIRING)
+            {
+                std::cout << "Rewiring ..." << std::endl;
+                //std::cout << "Cost near: " << near_node->g << " Cost new: " << new_state_node->g + config_distance(new_state_node->config, near_node->config, S) << std::endl;
+                Print(new_state_node->config, "Parent");
+                Print(near_node->config, "Child near");
+            }
+
+
+            near_node->parent = new_state_node;
+            near_node->g = new_state_node->g + config_distance(new_state_node->config, near_node->config, S);
+
+
+        }
     }
 }
+
+
 
 std::shared_ptr<Graph_Node> RRT_Star_Planner::CreateTreeNode(Tree& tree, State& state){
     return tree.add_vertex(state);
@@ -346,12 +419,22 @@ std::shared_ptr<Graph_Node> RRT_Star_Planner::FindNearestStateTo(Tree& tree, Sta
 };
 
 std::vector<std::shared_ptr<Graph_Node>> RRT_Star_Planner::FindNearestStates(Tree& tree, State& new_state, MatrixS& S){
-    return tree.find_neighbors_within_radius(new_state, S, RRT_STAR_REW_RADIUS, RRT_STAR_K_NEIGHBORS);
+    return tree.find_neighbors_within_radius(new_state, S, RRT_STAR_NEW_RADIUS, RRT_STAR_K_NEIGHBORS);
 };
 
 // INTEGRATION OF ORBITAL SAMPLER
 void RRT_Star_Planner::SampleConfiguration(State& sample_state, State& goal_state, bool& path_found){
-    sampler.SampleCW(sample_state);
+
+    double p_value = static_cast<double>(rand()) / RAND_MAX;
+    if (p_value < RRT_STAR_GOAL_BIASED)
+    {
+        sample_state = goal_state;
+    }
+    else
+    {
+        sampler.SampleCW(sample_state);
+    }
+    
 }
 
 

@@ -208,6 +208,36 @@ void CentralBody(const State& x, const Control& u, State& next_state)
 }
 
 
+// Nonlinear relative dynamics in LVLH frame
+void NonlinearRelativeKeplerianDynamics(const State& state, const Control& u, State& next_state) {
+
+    double x = state[0];
+    double y = state[1];
+    double z = state[2];
+    double x_dot = state[3];
+    double y_dot = state[4];
+    double z_dot = state[5];
+    
+    double rt = ASSUMED_SMA;
+    double rtdot = std::sqrt(MU / rt);
+    double rc = std::sqrt((rt + x) * (rt + x) + y * y + z * z);
+    double theta_dot = std::sqrt(MU / (rt * rt * rt));
+
+    next_state[0] = x_dot;
+    next_state[1] = y_dot;
+    next_state[2] = z_dot;
+
+    // Accelerations
+    next_state[3] = - (MU / (rc * rc * rc)) * (rt + x) + theta_dot * theta_dot * x + 2 * theta_dot * (y_dot - y * (rtdot / rt)) + MU / (rt * rt) + u[0] / DEFAULT_MASS;
+    next_state[4] = - (MU / (rc * rc * rc)) * y + theta_dot * theta_dot * y - 2 * theta_dot * (x_dot - x * (rtdot / rt)) + u[1] / DEFAULT_MASS;
+    next_state[5] = - (MU / (rc * rc * rc)) * z + u[2] / DEFAULT_MASS;
+
+
+}
+
+
+
+
 
 // Assumes circular orbit and distance between two spacecraft is << distance to central body
 void ClohessyWiltshire(const State &x, const Control &u, State &next_state)

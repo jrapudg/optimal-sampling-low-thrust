@@ -30,7 +30,7 @@ static void plannerRRTStar(
 
 
 
-    std::cout << std::endl << "******WELCOME TO RRT*-LQR MY FRIEND*****" << std::endl;
+    std::cout << std::endl << "******WELCOME TO LQR-RRT* MY FRIEND*****" << std::endl;
 
 
 	RRT_Star_Planner planner_rrt_star = RRT_Star_Planner(start_state_vec, 
