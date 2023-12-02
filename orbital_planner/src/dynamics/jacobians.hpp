@@ -6,7 +6,7 @@
 // Do not use the namespace Astrodynamics
 
 // Nonlinear relative dynamics in LVLH frame
-void GetJacobiansNRKD(Astrodynamics::MatrixA& Ac, Astrodynamics::MatrixB& Bc, const Astrodynamics::State& x, const Astrodynamics::Control& u, const double sma);
+void GetJacobiansNRKD(Astrodynamics::MatrixA& Ac, Astrodynamics::MatrixB& Bc, const Astrodynamics::State& x, const Astrodynamics::Control& u, const double sma = ASSUMED_SMA);
 
 void GetA_NRKD(Astrodynamics::MatrixA& A, const Astrodynamics::State& x, const double sma, const double m);
 void GetB_NRKD(Astrodynamics::MatrixB& B, const double m);
