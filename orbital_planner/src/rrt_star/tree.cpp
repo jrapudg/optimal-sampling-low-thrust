@@ -43,6 +43,7 @@ std::vector<std::shared_ptr<Graph_Node>> Tree::find_neighbors_within_radius(cons
     for(auto& value : list)
     {
         double neighbor_dist = config_distance(target, value.second->config, S);
+        //std::cout << "neighbor dist:: " << neighbor_dist << std::endl;
         if(neighbor_dist < radius)
         {
             node_dist_queue.push(std::make_pair(value.second, neighbor_dist));
