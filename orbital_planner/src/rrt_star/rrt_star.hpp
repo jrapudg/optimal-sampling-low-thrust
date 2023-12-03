@@ -101,14 +101,14 @@ class RRT_Star_Planner{
 		// Find nearest states 
 		// Need to change distance function in kd_tree.cpp to LQR distance
 		std::shared_ptr<Graph_Node> FindNearestStateTo(Tree& tree, State& state, MatrixS& S);
-		std::vector<std::shared_ptr<Graph_Node>> FindNearestStates(Tree& tree, State& new_state, MatrixS& S);
+		std::vector<std::shared_ptr<Graph_Node>> FindNearestStates(Tree& tree, State& new_state, const MatrixS& S);
 
 		// Check if the state is valid
 		bool ValidState(State& state);
 
 		// Tree methods
 		std::shared_ptr<Graph_Node> CreateTreeNode(Tree& tree, State& state);
-		void AddToTree(Tree& tree, std::shared_ptr<Graph_Node> state_node, std::shared_ptr<Graph_Node> parent_state_node);
+		void AddToTree(Tree& tree, std::shared_ptr<Graph_Node> state_node, std::shared_ptr<Graph_Node> parent_state_node, MatrixS& S);
 		
 		// Choose Parent
 		void ChooseParent(Tree& tree, std::shared_ptr<Graph_Node>& new_state_node, std::shared_ptr<Graph_Node>& parent_node, std::vector<std::shared_ptr<Graph_Node>>& near_nodes, MatrixS& S_new);

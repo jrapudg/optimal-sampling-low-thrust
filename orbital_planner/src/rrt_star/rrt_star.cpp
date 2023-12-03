@@ -112,16 +112,11 @@ void RRT_Star_Planner::FindPath(State& start_state, State& goal_state){
         SampleConfiguration(sampled_state, goal_state, path_found);
         Print(sampled_state, "Sampled configuration");
 
-        // TO DELETE AFTER 
-        /*State test;
-        SampleConfiguration(test, goal_state, path_found);
-        CreateTreeNode(tree, test);*/
-
 
         // LQRNearest
-        // TODO For other dynamics, locally linearize around sampled_state and 0 control 
+        // Locally linearize around sampled_state and 0 control 
         UpdateLinearizedDiscreteDynamicsAround(sampled_state, zero_control);
-        // TODO Then, compute the S matrix for the search of the nearest node
+        // Compute the S matrix for the search of the nearest node
         lqr.ComputeCostMatrix(Ad, Bd, S);
         std::shared_ptr<Graph_Node> nearest_node = FindNearestStateTo(tree, sampled_state, S);
         //Print(nearest_node->config, "FindNearestStateTo node");
@@ -131,7 +126,7 @@ void RRT_Star_Planner::FindPath(State& start_state, State& goal_state){
 
         // LQRSteer
         // This new state represents the end of a trajectory executed with the LQR-Policy generated from the LQRNearest above with a pre-specified step size based on the cost
-        // TODO Compute the optimal gain K based on the S from sampled state
+        // Compute the optimal gain K based on the S from sampled state
         K = lqr.ComputeOptimalGain(Ad, Bd, S);
         State new_state;
         SteerTowards(tree, sampled_state, nearest_node, new_state);
@@ -145,9 +140,9 @@ void RRT_Star_Planner::FindPath(State& start_state, State& goal_state){
 
         // LQRNear
         // Setting up local LQR cost and policy on new_state
-        // TODO Linearize around new_state (A and B)
+        // Linearize around new_state (A and B)
         UpdateLinearizedDiscreteDynamicsAround(new_state, zero_control);
-        // TODO Compute subsequent S and K (around new_state as mentioned above)
+        // Compute subsequent S and K (around new_state as mentioned above)
         lqr.ComputeCostMatrix(Ad, Bd, S);
         //std::cout << "FindNearestStates -" << std::endl;
         std::vector<std::shared_ptr<Graph_Node>> near_nodes = FindNearestStates(tree, new_state, S);
@@ -161,7 +156,7 @@ void RRT_Star_Planner::FindPath(State& start_state, State& goal_state){
 
         // AddToTree
         //std::cout << "AddToTree" << std::endl;
-        AddToTree(tree, new_state_node, parent_node);
+        AddToTree(tree, new_state_node, parent_node, S);
         Print(parent_node->config, "Parent");
         //std::cout << "Node cost with that parent " << new_state_node->g << std::endl;
         
@@ -176,7 +171,7 @@ void RRT_Star_Planner::FindPath(State& start_state, State& goal_state){
         UpdateLinearizedDiscreteDynamicsAround(goal_state, zero_control);
         lqr.ComputeCostMatrix(Ad, Bd, S);
 
-        std::cout << "Cost-to-go to the GOAL: " << config_distance(new_state_node->config, goal_config, S) << std::endl;
+        std::cout << "Cost-to-go w.r.t to the GOAL: " << config_distance(new_state_node->config, goal_config, S) << std::endl;
         if (!path_found && are_configs_close(new_state_node->config, goal_config, S, RRT_STAR_GOAL_TOL))
         {
 
@@ -185,12 +180,11 @@ void RRT_Star_Planner::FindPath(State& start_state, State& goal_state){
         
             goal_node = CreateTreeNode(tree, goal_config);
             goal_node->g = 0;
-            AddToTree(tree, goal_node, new_state_node);
-            
-            std::cout << "GOAL COST: " << goal_node->g << std::endl;
+            AddToTree(tree, goal_node, new_state_node, S);
 
 
             ComputePath(goal_node);
+
             std::cout << "PATH SIZE: " << path.size() << std::endl;
             path_found = true;
             std::cout << "RESULT -> SOLUTION FOUND!" << std::endl;
@@ -391,7 +385,7 @@ void RRT_Star_Planner::Rewire(Tree& tree,
     /// Container for each computation
     MatrixA At;
     MatrixB Bt;
-    MatrixS St;
+    //MatrixS St;
 
     MatrixA Adt;
     MatrixB Bdt;
@@ -400,14 +394,10 @@ void RRT_Star_Planner::Rewire(Tree& tree,
     for (auto& near_node : near_nodes)
     {
         
-        // Have to compute S for each near_nodes, we could easily pre_computed at the creation of the node
-        GetJacobiansNRKD(At, Bt, near_node->config, zero_control);
-        sim.Discretize(At, Bt, SIM_DT, Adt, Bdt);
-        lqr.ComputeCostMatrix(Adt, Bdt, St);
+        // Use of pre-computed S
 
-        
         if ((near_node != new_state_node) && (near_node != parent_node) && 
-            (near_node->g > new_state_node->g + config_distance(new_state_node->config, near_node->config, St)))
+            (near_node->g > new_state_node->g + config_distance(new_state_node->config, near_node->config, near_node->S)))
         {
             
             if (RRT_STAR_DEBUG_REWIRING)
@@ -420,7 +410,7 @@ void RRT_Star_Planner::Rewire(Tree& tree,
 
 
             near_node->parent = new_state_node;
-            near_node->g = new_state_node->g + config_distance(new_state_node->config, near_node->config, St);
+            near_node->g = new_state_node->g + config_distance(new_state_node->config, near_node->config, near_node->S);
 
 
         }
@@ -433,8 +423,8 @@ std::shared_ptr<Graph_Node> RRT_Star_Planner::CreateTreeNode(Tree& tree, State& 
     return tree.add_vertex(state);
 };
 
-void RRT_Star_Planner::AddToTree(Tree& tree, std::shared_ptr<Graph_Node> state_node, std::shared_ptr<Graph_Node> parent_state_node){
-    tree.add_edge(state_node, parent_state_node);
+void RRT_Star_Planner::AddToTree(Tree& tree, std::shared_ptr<Graph_Node> state_node, std::shared_ptr<Graph_Node> parent_state_node, MatrixS& S){
+    tree.add_edge(state_node, parent_state_node, S);
 };
 
 bool RRT_Star_Planner::ValidState(State& state){
@@ -445,7 +435,7 @@ std::shared_ptr<Graph_Node> RRT_Star_Planner::FindNearestStateTo(Tree& tree, Sta
     return tree.find_nearest_neighbor(state, S);
 };
 
-std::vector<std::shared_ptr<Graph_Node>> RRT_Star_Planner::FindNearestStates(Tree& tree, State& new_state, MatrixS& S){
+std::vector<std::shared_ptr<Graph_Node>> RRT_Star_Planner::FindNearestStates(Tree& tree, State& new_state, const MatrixS& S){
     return tree.find_neighbors_within_radius(new_state, S, RRT_STAR_NEW_RADIUS, RRT_STAR_K_NEIGHBORS);
 };
 

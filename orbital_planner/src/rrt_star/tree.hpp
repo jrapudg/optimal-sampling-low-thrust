@@ -24,7 +24,7 @@ class Tree {
 
 		// Methods
 		std::shared_ptr<Graph_Node> add_vertex(const State& config);
-		void add_edge(std::shared_ptr<Graph_Node> node, std::shared_ptr<Graph_Node> parent_node);
+		void add_edge(std::shared_ptr<Graph_Node> node, std::shared_ptr<Graph_Node> parent_node, const MatrixS& S);
 		std::shared_ptr<Graph_Node> find_nearest_neighbor(const State& target, const MatrixS& S);
 		std::vector<std::shared_ptr<Graph_Node>> find_neighbors_within_radius(const State& target, const MatrixS& S, double radius, int k_neighbors);
 		int get_current_index();
