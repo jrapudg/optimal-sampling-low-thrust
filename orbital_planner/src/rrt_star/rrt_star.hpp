@@ -3,7 +3,6 @@
 
 #include "utils.hpp"
 #include "tree.hpp"
-#include "basic_structs.hpp"
 #include "../dynamics/astrodynamics.hpp"
 #include "../dynamics/lqr.hpp"
 #include "../dynamics/simulation.hpp"
