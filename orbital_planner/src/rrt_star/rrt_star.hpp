@@ -7,6 +7,8 @@
 #include "../dynamics/lqr.hpp"
 #include "../dynamics/simulation.hpp"
 
+#include "../dynamics/jacobians_pendelum.hpp"
+
 /* General params*/
 #define DEBUG_DEV false
 #define DEBUG_USR false
@@ -28,7 +30,10 @@
 #define RRT_STAR_R_MIN 0.1*RRT_STAR_STEP_EXTEND
 #define RRT_STAR_R_MAX 0.5*RRT_STAR_STEP_EXTEND
 
+//#define RRT_STAR_REW_RADIUS 10000.0
+
 #define RRT_STAR_REW_RADIUS 10000.0
+
 #define RRT_STAR_K_NEIGHBORS 10
 
 #define RRT_STAR_KEEP_UNTIL_TIME_MAX false
@@ -39,7 +44,8 @@
 #define SIM_COST_TOL 1.0
 #define MAX_EXTENT_TRIALS 80
 
-using namespace Astrodynamics;
+using namespace Pendelum; 
+//using namespace Astrodynamics;
 using namespace Optimal;
 using namespace Simulation;
 
@@ -61,7 +67,7 @@ class RRT_Star_Planner{
         std::mt19937 gen;
         std::normal_distribution<double> distribution_rrt_star;
         std::uniform_real_distribution<double> distribution_local_bias;
-		OrbitalSampler sampler = OrbitalSampler(seed);
+		//OrbitalSampler sampler = OrbitalSampler(seed);
 
 		// Dynamics
 		MatrixA A;
@@ -69,7 +75,7 @@ class RRT_Star_Planner{
 		MatrixA Ad;
 		MatrixB Bd;
 
-		Simulator sim = Simulator(ClohessyWiltshire, SIM_DT);
+		Simulator sim = Simulator(pendelum_dynamics, SIM_DT);
 
 		// LQR
 		MatrixQ Q;
@@ -100,13 +106,22 @@ class RRT_Star_Planner{
             distribution_local_bias = std::uniform_real_distribution<double>(RRT_STAR_R_MIN, RRT_STAR_R_MAX);
 
 			// Dynamics initialization
-			GetClohessyWiltshireMatrices(A, B);
+			//GetClohessyWiltshireMatrices(A, B);
+			//get the A and B for the pendelum
+
+			//get this out of the constructor
+
 			Simulator::Discretize(A, B, SIM_DT, Ad, Bd);
 			// LQR Initialization
-			Q = Eigen::MatrixXd::Identity(6, 6) * 5;
-			R = Eigen::MatrixXd::Identity(3, 3);
+			//Q = Eigen::MatrixXd::Identity(6, 6) * 5;
+			//R = Eigen::MatrixXd::Identity(3, 3);
+
+			Q = Eigen::MatrixXd::Identity(2, 2) * 5;
+			R = Eigen::MatrixXd::Identity(1, 2);
 
 			lqr = LQR(Q, R);
+
+			//for CW constant S is ok
 			lqr.ComputeCostMatrix(Ad,Bd, S);
 		}
 

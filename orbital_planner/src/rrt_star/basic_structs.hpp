@@ -6,9 +6,13 @@
 #include <memory>
 #include <limits>
 
-#include "../dynamics/astrodynamics.hpp"
+//#include "../dynamics/astrodynamics.hpp"
 
-using namespace Astrodynamics;
+#include "../dynamics/pendelum.hpp"
+
+//using namespace Astrodynamics;
+
+using namespace Pendelum; 
 
 struct Graph_Node {
     // Input Attributes

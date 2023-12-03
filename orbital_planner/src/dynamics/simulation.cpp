@@ -33,8 +33,6 @@ void Simulator::RK4(const State& state, const Control& control, State &next_stat
 }
 
 
-
-
 void Simulator::Discretize(const MatrixA& Ac, const MatrixB& Bc, double dt, MatrixA& Ad, MatrixB& Bd)
 {
 

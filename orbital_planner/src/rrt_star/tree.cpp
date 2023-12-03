@@ -1,6 +1,7 @@
 #include "tree.hpp"
 
-using namespace Astrodynamics;
+//using namespace Astrodynamics;
+using namespace Pendelum; 
 using namespace Optimal;
 
 // Methods
@@ -39,6 +40,7 @@ struct CompareNodeDist {
     }
 };
 
+//radius is too large for the nearest neighbor calculation
 std::vector<std::shared_ptr<Graph_Node>> Tree::find_neighbors_within_radius(const State& target, const MatrixS& S, double radius, int k_neighbors){
     std::priority_queue<std::pair<std::shared_ptr<Graph_Node>, double>, std::vector<std::pair<std::shared_ptr<Graph_Node>, double>>, CompareNodeDist> node_dist_queue;
     for(auto& value : list)

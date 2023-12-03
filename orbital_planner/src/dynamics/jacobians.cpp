@@ -153,7 +153,6 @@ void GetBc_2BP(MatrixB& Bc, const State& x, const Control& u)
     
 }
 
-
 /*int main()
 {
     // Test against ForwardDiff in Julia

@@ -3,10 +3,13 @@
 
 #include "basic_structs.hpp"
 #include "utils.hpp"
-#include "../dynamics/astrodynamics.hpp"
+//#include "../dynamics/astrodynamics.hpp"
+
+#include "../dynamics/pendelum.hpp"
+
 #include "../dynamics/lqr.hpp"
 
-using namespace Astrodynamics;
+//using namespace Astrodynamics;
 using namespace Optimal;
 
 class Tree {

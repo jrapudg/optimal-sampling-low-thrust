@@ -263,10 +263,6 @@ void CR3BP(const State &state, const Control &control, State &state_dot)
     // Update state_dot for CR3BP
 }
 
-
-
-
-
 State OE2ECI(const StateOE& orbital_elements)
 {
     // TODO

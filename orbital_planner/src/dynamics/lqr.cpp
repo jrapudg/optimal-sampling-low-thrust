@@ -27,7 +27,7 @@ LQR::LQR(const MatrixQ& Q, const MatrixR& R)
         throw std::invalid_argument("Matrices Q and R must be square.");
     }
 
-    dim = Q.rows(); // must be 6
+    dim = Q.rows(); // must be 2 for the pendelum
 
     // TODO check Q is p.s.d, R is p.d
 
@@ -111,11 +111,14 @@ void LQR::_SolveRicatti(const MatrixA& A, const MatrixB& B, MatrixS& S, double t
     //return Hk1; // This is S
     S = Hk1;*/
 
-    
 
     // Ricatti recursion
     MatrixA At = A.transpose();
-    Eigen::Matrix<double, 3, 6> Bt = B.transpose();
+
+    //Eigen::Matrix<double, 3, 6> Bt = B.transpose();
+
+    //for pendelum
+    Eigen::Matrix<double, 1, 2> Bt = B.transpose();
 
     S = Q;
     MatrixS Sp;
@@ -150,7 +153,10 @@ double LQR::ComputeCostToGo(State state, State target_state, const MatrixS& S)
 
 MatrixK LQR::ComputeOptimalGain(MatrixA& A, MatrixB& B, MatrixS& S)
 {
-    Eigen::Matrix<double, 3, 6> Bt = B.transpose();
+    //Eigen::Matrix<double, 3, 6> Bt = B.transpose();
+
+    //for pendelum
+    Eigen::Matrix<double, 1, 2> Bt = B.transpose();
     Eigen::LDLT<Eigen::MatrixXd> r_LLT(R + Bt * S * B); // compute the Cholesky decomposition
     return (r_LLT).solve(Bt * S * A);
 }
@@ -189,8 +195,9 @@ double LQR::GetTrajectoryCost(State starting_state, State& goal_state, MatrixA& 
     control = - K * (current_state - goal_state);
     J += QuadraticCost(current_state, control);
 
-
-    while (true)
+    //change this while true for max iterations
+    //while (true)
+    for(int i=0; i<100; i++)
     {
         //std::cout << "-----------" << std::endl;
         //std::cout << "Current state: \n" << current_state << std::endl;

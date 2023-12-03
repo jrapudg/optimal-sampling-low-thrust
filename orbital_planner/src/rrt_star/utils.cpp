@@ -1,6 +1,8 @@
 #include "utils.hpp"
 
-using namespace Astrodynamics;
+//using namespace Astrodynamics;
+
+using namespace Pendelum; 
 
 //*******************************************************************************************************************//
 //                                                                                                                   //

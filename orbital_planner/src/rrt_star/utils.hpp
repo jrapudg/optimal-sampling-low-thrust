@@ -21,7 +21,9 @@
 #include <fstream> // For reading/writing files
 #include <assert.h> 
 
-#include "../dynamics/astrodynamics.hpp"
+//#include "../dynamics/astrodynamics.hpp"
+
+#include "../dynamics/pendelum.hpp"
 #include "../dynamics/lqr.hpp"
 
 #define GETMAPINDEX(X, Y, XSIZE, YSIZE) (Y*XSIZE + X)
@@ -49,8 +51,12 @@ using std::tie;
 using std::cout;
 using std::endl;
 
-using namespace Astrodynamics;
+
+using namespace Pendelum;
+//using namespace Astrodynamics;
 using namespace Optimal;
+
+
 //*******************************************************************************************************************//
 //                                                                                                                   //
 //                                                GIVEN FUNCTIONS                                                    //
@@ -69,21 +75,21 @@ bool equalDoubleArrays(double* v1, double *v2, int size);
 //                                          HELPER FUNCTIONS                                                         //
 //                                                                                                                   //
 //*******************************************************************************************************************//
-State ForwadSim(State& q_next, State& q_current, State& q_rand, double dt);
+Pendelum::State ForwadSim(Pendelum::State& q_next, Pendelum::State& q_current, Pendelum::State& q_rand, double dt);
 
 // INTEGRATE HERE
 //double GetTrajectoryCost(const State& current_state, const State& new_state);
 
 
 // INTEGRATE HERE
-double config_distance(const State& a, const State& b, const MatrixS& S);
+double config_distance(const Pendelum::State& a, const Pendelum::State& b, const MatrixS& S);
 
-double calculate_norm(const State& config);
+double calculate_norm(const Pendelum::State& config);
 
-bool are_configs_equal(const State& config1, const State& config2);
+bool are_configs_equal(const Pendelum::State& config1, const Pendelum::State& config2);
 
-bool are_configs_close(const State& config1, const State& config2, const MatrixS& S, double min_distance);
+bool are_configs_close(const Pendelum::State& config1, const Pendelum::State& config2, const MatrixS& S, double min_distance);
 
-void print_config(const State& config);
+void print_config(const Pendelum::State& config);
 
 #endif // UTILS_H

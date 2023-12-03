@@ -1,18 +1,63 @@
+// #ifndef LQR_HPP
+// #define LQR_HPP 
+
+// #include <eigen3/Eigen/Dense>
+// //#include "astrodynamics.hpp"
+// #include "pendelum.hpp"
+// #include "simulation.hpp"
+
+// namespace Optimal
+// {
+
+// //using namespace Astrodynamics;
+
+// using namespace Pendelum; 
+
+// typedef Eigen::Matrix<double, 2, 2> MatrixS;
+// typedef Eigen::Matrix<double, 2, 2> MatrixQ;
+// typedef Eigen::Matrix<double, 1, 1> MatrixR;
+// typedef Eigen::Matrix<double, 1, 2> MatrixK;
+
+
+// class LQR 
+// {
+
+//     public:
+//         // Constructors
+//         void ComputeCostMatrix(const MatrixA& A, const MatrixB& B, Optimal::MatrixS& S, double tol=1e-12, bool DEBUG=false);
+
+//         static double ComputeCostToGo(State state, State target_state, const Optimal::MatrixS& S);
+
+//         Optimal::Control ComputeOptimalPolicy(State current_state, MatrixA& A, MatrixB& B, Optimal::MatrixS& S);
+
+//         Optimal::MatrixK ComputeOptimalGain(MatrixA& A, MatrixB& B, Optimal::MatrixS& S);
+
+//         double QuadraticCost(State& state, Control& control);
+
+//         double GetTrajectoryCost(State starting_state, State& goal_state, MatrixA& A, MatrixB& B, Simulation::Simulator& sim, double tol=1e-2);
+        
+
+// };
+
+// }
+
+// #endif 
+
 #ifndef LQR_HPP
 #define LQR_HPP 
 
 #include <eigen3/Eigen/Dense>
-#include "astrodynamics.hpp"
+#include "pendelum.hpp"
 #include "simulation.hpp"
 
 namespace Optimal
 {
 
-using namespace Astrodynamics;
-typedef Eigen::Matrix<double, 6, 6> MatrixS;
-typedef Eigen::Matrix<double, 6, 6> MatrixQ;
-typedef Eigen::Matrix<double, 3, 3> MatrixR;
-typedef Eigen::Matrix<double, 3, 6> MatrixK;
+using namespace Pendelum;
+typedef Eigen::Matrix<double, 2, 2> MatrixS;
+typedef Eigen::Matrix<double, 2, 2> MatrixQ;
+typedef Eigen::Matrix<double, 1, 1> MatrixR;
+typedef Eigen::Matrix<double, 1, 2> MatrixK;
 
 
 class LQR 

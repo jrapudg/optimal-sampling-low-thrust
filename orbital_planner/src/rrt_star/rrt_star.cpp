@@ -1,6 +1,8 @@
 #include "rrt_star.hpp"
 
-using namespace Astrodynamics;
+// using namespace Astrodynamics;
+
+using namespace Pendelum;
 
 // Methods
 void RRT_Star_Planner::ComputePath(std::shared_ptr<Graph_Node> node){
@@ -38,12 +40,16 @@ void RRT_Star_Planner::ComputePath(std::shared_ptr<Graph_Node> node){
     *plan_length = path.size();
 }
 
+
+
 void RRT_Star_Planner::FindPath(State& start_state, State& goal_state){
     auto start = std::chrono::high_resolution_clock::now();
     State state_rand;
     std::shared_ptr<Graph_Node> parent_node;
 
-    for (int i = 0; i < RRT_STAR_NUM_ITER; i++) { 
+    //for (int i = 0; i < RRT_STAR_NUM_ITER; i++) { 
+    //just run 1 iteration
+    for (int i = 0; i < 5; i++) { 
         // Sample 
         std::cout << "Sample Configuration" << std::endl;
         SampleConfiguration(state_rand, goal_state, path_found);
@@ -64,6 +70,8 @@ void RRT_Star_Planner::FindPath(State& start_state, State& goal_state){
 
         // LQRNearest
         std::cout << "FindNearestStateTo" << std::endl;
+
+        //std::cout << "this is S: " << S << std::endl;
         auto nearest_node = FindNearestStateTo(tree, state_rand, S);
         std::cout << "Start ";
         print_config(nearest_node->config);
@@ -106,7 +114,7 @@ void RRT_Star_Planner::FindPath(State& start_state, State& goal_state){
             }
         }
 
-        if (!path_found & are_configs_close(new_state_node->config, goal_config, S, RRT_STAR_GOAL_TOL)){
+        if (!path_found && are_configs_close(new_state_node->config, goal_config, S, RRT_STAR_GOAL_TOL)){
             std::cout << "Goal Node Reached!" << std::endl;
             std::cout << "Num Samples: "<< i + 1 << std::endl;
         
@@ -124,7 +132,7 @@ void RRT_Star_Planner::FindPath(State& start_state, State& goal_state){
             auto time_elapsed_milli = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
             std::cout << "TIME: " << (double) time_elapsed_milli/1000 << std::endl;
             std::cout << "Graph Nodes Before Refinement: " << tree.list.size() << std::endl;
-            if (!RRT_STAR_LOCAL_BIAS_ACTIVE & !RRT_STAR_NODE_REJECTION_ACTIVE & !RRT_STAR_KEEP_UNTIL_TIME_MAX){
+            if (!RRT_STAR_LOCAL_BIAS_ACTIVE && !RRT_STAR_NODE_REJECTION_ACTIVE && !RRT_STAR_KEEP_UNTIL_TIME_MAX){
                 std::cout << "NO REFINEMENT ACTIVE" << std::endl;
                 return;
             }
@@ -161,15 +169,20 @@ void RRT_Star_Planner::Step(MatrixA& A, MatrixB& B, const State& state, State& n
     int trials = 0;
     MatrixS S;
     Control u;
+    //for nonlinear dynamics, ensure that we are evaluating K from the nearest node configuration. A and B are constant for the CW equations
+    //S gets passed in by reference and populated here
     lqr.ComputeCostMatrix(A, B, S);
     MatrixK K = lqr.ComputeOptimalGain(A, B, S);
 
     State current_state = state;
 
     // Taking norm distance from the original state
-    while ((current_state.head(3) - state.head(3)).squaredNorm() <= eps)
+    while ((current_state.head(1) - state.head(1)).squaredNorm() <= eps)
     {
-        u = - K * current_state;
+        //check the order of this u. may be reversed
+        //u = - K * (current_state-next_state);
+
+        u = - K * (next_state-current_state);
         //Print(u);
         sim.Step(current_state, u, next_state);
         current_state = next_state;
@@ -188,12 +201,15 @@ void RRT_Star_Planner::Step(MatrixA& A, MatrixB& B, const State& state, State& n
 void RRT_Star_Planner::SteerTowards(Tree& tree, State& sample_state, std::shared_ptr<Graph_Node>& nearest_node){
     std::cout << "From ";
     print_config(nearest_node->config);
+
+    //what is Ad and Bd here
     Step(Ad, Bd, nearest_node->config, sample_state);
 }
 
+
 void RRT_Star_Planner::Rewire(Tree& tree, std::shared_ptr<Graph_Node>& new_state_node, std::shared_ptr<Graph_Node>& parent_node, std::vector<std::shared_ptr<Graph_Node>>& near_nodes){
     for (auto& near_node : near_nodes){
-        if ((near_node != new_state_node) & (near_node != parent_node) & 
+        if ((near_node != new_state_node) && (near_node != parent_node) && 
             (near_node->g > new_state_node->g + lqr.GetTrajectoryCost(new_state_node->config, near_node->config, Ad, Bd, sim, SIM_COST_TOL))){
             
             if (RRT_STAR_DEBUG_REWIRING){
@@ -257,16 +273,18 @@ std::vector<std::shared_ptr<Graph_Node>> RRT_Star_Planner::FindNearestStates(Tre
     return tree.find_neighbors_within_radius(new_state, S, RRT_STAR_REW_RADIUS, RRT_STAR_K_NEIGHBORS);
 };
 
-// INTEGRATION OF ORBITAL SAMPLER
+
 void RRT_Star_Planner::SampleConfiguration(State& sample_state, State& goal_state, bool& path_found){
     // Generate a random number between 0 and 1
     double p_value = static_cast<double>(rand()) / RAND_MAX;
-    if (RRT_STAR_LOCAL_BIAS_ACTIVE & (p_value < RRT_STAR_LOCAL_BIASED) & path_found){
+    if (RRT_STAR_LOCAL_BIAS_ACTIVE && (p_value < RRT_STAR_LOCAL_BIASED) && path_found){
         _sample_local_biased_config(sample_state);
     }
     else{
         //_sample_random_config(sample_state);
-        sampler.SampleCW(sample_state);
+        //sampler.SampleCW(sample_state);
+
+        sample_pendelum(sample_state);
     }
 }
 
@@ -281,6 +299,8 @@ void RRT_Star_Planner::_sample_goal_biased_config(State& sample_state, State& go
     }
 }
 
+
+//what is this? 
 void RRT_Star_Planner::_sample_local_biased_config(State& sample_state){
     if(RRT_STAR_DEBUG_LOCAL){
         std::cout << "LOCAL sampling ..." << std::endl;
