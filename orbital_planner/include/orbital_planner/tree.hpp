@@ -7,9 +7,9 @@
 #include <limits>
 
 
-#include "utils.hpp"
-#include "../dynamics/astrodynamics.hpp"
-#include "../dynamics/lqr.hpp"
+#include "orbital_planner/utils.hpp"
+#include "orbital_planner/astrodynamics.hpp"
+#include "orbital_planner/lqr.hpp"
 
 
 

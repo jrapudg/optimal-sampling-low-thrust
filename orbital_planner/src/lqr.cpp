@@ -7,7 +7,7 @@
 #include <unistd.h>
 
 
-#include "lqr.hpp"
+#include "orbital_planner/lqr.hpp"
 
 
 

@@ -21,8 +21,8 @@
 #include <fstream> // For reading/writing files
 #include <assert.h> 
 
-#include "../dynamics/astrodynamics.hpp"
-#include "../dynamics/lqr.hpp"
+#include "orbital_planner/astrodynamics.hpp"
+#include "orbital_planner/lqr.hpp"
 
 #define GETMAPINDEX(X, Y, XSIZE, YSIZE) (Y*XSIZE + X)
 

@@ -2,9 +2,9 @@
 #define PLANNER_H
 
 
-#include "rrt_star.hpp"
-#include "utils.hpp"
-#include "../dynamics/astrodynamics.hpp"
+#include "orbital_planner/rrt_star.hpp"
+#include "orbital_planner/utils.hpp"
+#include "orbital_planner/astrodynamics.hpp"
 
 #include <math.h>
 #include <vector>

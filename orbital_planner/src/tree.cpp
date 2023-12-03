@@ -1,4 +1,4 @@
-#include "tree.hpp"
+#include "orbital_planner/tree.hpp"
 
 using namespace Astrodynamics;
 using namespace Optimal;

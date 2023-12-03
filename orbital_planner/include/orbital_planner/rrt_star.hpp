@@ -1,11 +1,11 @@
 #ifndef RRT_STAR_H
 #define RRT_STAR_H
 
-#include "utils.hpp"
-#include "tree.hpp"
-#include "../dynamics/astrodynamics.hpp"
-#include "../dynamics/lqr.hpp"
-#include "../dynamics/simulation.hpp"
+#include "orbital_planner/utils.hpp"
+#include "orbital_planner/tree.hpp"
+#include "orbital_planner/astrodynamics.hpp"
+#include "orbital_planner/lqr.hpp"
+#include "orbital_planner/simulation.hpp"
 
 /* General params*/
 #define DEBUG_DEV false

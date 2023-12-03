@@ -1,5 +1,5 @@
-#include "rrt_star.hpp"
-#include "../dynamics/jacobians.hpp"
+#include "orbital_planner/rrt_star.hpp"
+#include "orbital_planner/jacobians.hpp"
 
 using namespace Astrodynamics;
 
@@ -56,7 +56,7 @@ void RRTStar::BacktrackToStart(std::vector<std::shared_ptr<Graph_Node>>& path, s
     path.clear();
     path.push_back(node);
     while(node->parent != start_node){
-        Print(node->config, "State");
+        // Print(node->config, "State");
         node = node->parent;
         //Print(node->config, "Parent");
         path.push_back(node);
@@ -90,7 +90,7 @@ double RRTStar::ComputeQuadraticCost(const std::vector<std::shared_ptr<Graph_Nod
 double RRTStar::ComputePath(std::vector<State>& state_path)
 {
     
-    std::cout << "Computing path ..." << std::endl;
+    // std::cout << "Computing path ..." << std::endl;
 
     // Must check if path if found first 
     if (!PathFound())

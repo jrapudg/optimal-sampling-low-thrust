@@ -12,7 +12,11 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   genmsg
+  roslib
 )
+
+find_package(Eigen3 REQUIRED)
+include_directories(${Eigen_INCLUDE_DIRS})
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -123,9 +127,15 @@ include_directories(
 )
 
 ## Declare a C++ library
-# add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/orbital_planner.cpp
-# )
+add_library(rrt_star_libraries
+  src/astrodynamics.cpp
+  src/lqr.cpp
+  src/utils.cpp
+  src/simulation.cpp
+  src/rrt_star.cpp
+  src/tree.cpp
+  src/jacobians.cpp
+)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -138,7 +148,9 @@ include_directories(
 # add_executable(${PROJECT_NAME}_node src/orbital_planner_node.cpp)
 
 add_executable(orbital_planner_node src/orbital_planner_node.cpp)
-target_link_libraries(orbital_planner_node ${catkin_LIBRARIES})
+target_link_libraries(orbital_planner_node 
+                        ${catkin_LIBRARIES}
+                        rrt_star_libraries)
 add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Rename C++ executable without prefix

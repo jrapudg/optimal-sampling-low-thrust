@@ -2,8 +2,8 @@
 #define LQR_HPP 
 
 #include <eigen3/Eigen/Dense>
-#include "astrodynamics.hpp"
-#include "simulation.hpp"
+#include "orbital_planner/astrodynamics.hpp"
+#include "orbital_planner/simulation.hpp"
 
 namespace Optimal
 {

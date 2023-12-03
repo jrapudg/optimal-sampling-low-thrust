@@ -1,7 +1,7 @@
 #ifndef JACOBIANS_HPP
 #define JACOBIANS_HPP
 
-#include "astrodynamics.hpp"
+#include "orbital_planner/astrodynamics.hpp"
 
 // Do not use the namespace Astrodynamics
 
