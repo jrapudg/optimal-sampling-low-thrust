@@ -1,6 +1,7 @@
 
 #include "ros/ros.h"
 #include "std_msgs/String.h"
+#include "visualization_msgs/Marker.h"
 
 // LQR-RRT* includes
 #include "orbital_planner/utils.hpp"
@@ -14,6 +15,93 @@ State convertArrayToState(const double* array) {
     return state;
 }
 
+visualization_msgs::Marker visualize_tree_msg(const Tree* tree, std::string local_frame="map")
+{
+    visualization_msgs::Marker m;
+    m.header.frame_id = local_frame;
+    m.header.stamp = ros::Time();
+    m.ns = "tree";
+    m.id = 0;
+    m.type = visualization_msgs::Marker::LINE_LIST;
+    m.action = visualization_msgs::Marker::ADD;
+    m.pose.position.x = 0.0;
+    m.pose.position.y = 0.0;
+    m.pose.position.z = 0.0;
+    m.pose.orientation.x = 0.0;
+    m.pose.orientation.y = 0.0;
+    m.pose.orientation.z = 0.0;
+    m.pose.orientation.w = 1.0;
+    m.scale.x = 0.1;
+    m.scale.y = 0.1;
+    m.scale.z = 0.1;
+    m.color.a = 0.25;
+    m.color.r = 0.0;
+    m.color.g = 1.0;
+    m.color.b = 0.0;
+
+    for(const auto& node_info : tree->list)
+    {
+        std::shared_ptr<Graph_Node> node = node_info.second;
+        
+        //skip root node
+        if(node->parent == nullptr)
+        {
+            continue;
+        }
+
+        geometry_msgs::Point child_point;
+        child_point.x = node->config[0];
+        child_point.y = node->config[1];
+        child_point.z = node->config[2];
+        geometry_msgs::Point parent_point;
+        parent_point.x = node->parent->config[0];
+        parent_point.y = node->parent->config[1];
+        parent_point.z = node->parent->config[2];
+        m.points.push_back(child_point);
+        m.points.push_back(parent_point);
+    }
+
+    return m;
+}
+
+visualization_msgs::Marker visualize_path_msg(std::vector<State> path, std::string local_frame="map")
+{
+    visualization_msgs::Marker m;
+    m.header.frame_id = local_frame;
+    m.header.stamp = ros::Time();
+    m.ns = "path";
+    m.id = 0;
+    m.type = visualization_msgs::Marker::LINE_STRIP;
+    m.action = visualization_msgs::Marker::ADD;
+    m.pose.position.x = 0.0;
+    m.pose.position.y = 0.0;
+    m.pose.position.z = 0.0;
+    m.pose.orientation.x = 0.0;
+    m.pose.orientation.y = 0.0;
+    m.pose.orientation.z = 0.0;
+    m.pose.orientation.w = 1.0;
+    m.scale.x = 0.1;
+    m.scale.y = 0.1;
+    m.scale.z = 0.1;
+    m.color.a = 1.0;
+    m.color.r = 1.0;
+    m.color.g = 1.0;
+    m.color.b = 0.0;
+
+    //iterate through path and add each node to path message
+    for(auto node : path)
+    {
+        geometry_msgs::Point child_point;
+        child_point.x = node[0];
+        child_point.y = node[1];
+        child_point.z = node[2];
+        m.points.push_back(child_point);
+    }
+
+    return m;
+
+}
+
 class OrbitalPlannerNode
 {
 //everything public for now
@@ -23,9 +111,14 @@ public:
     ros::NodeHandle &nh;
     std::string local_frame = "map"; //TODO: need to replace with right frame
 
+    ros::Publisher tree_viz_pub;
+    ros::Publisher path_viz_pub;
+
     OrbitalPlannerNode(ros::NodeHandle &nh, double rate)
     : nh(nh), loop_rate(rate)
     {
+        tree_viz_pub = nh.advertise<visualization_msgs::Marker>("tree_visualization", 10);
+        path_viz_pub = nh.advertise<visualization_msgs::Marker>("path_visualization", 10);
         ROS_INFO_STREAM("Orbital Planner Initialization Complete!");
     }
 
@@ -59,8 +152,10 @@ public:
 
         while(ros::ok())
         {
-            //tree visualization here -- TODO:
+            //visualize tree
             const Tree* tree = planner.GetTree();
+            visualization_msgs::Marker tree_marker = visualize_tree_msg(tree);
+            tree_viz_pub.publish(tree_marker);
 
             //main planning loop
             if(!planner.PathFound() && i < RRT_STAR_NUM_ITER)
@@ -72,7 +167,10 @@ public:
             else if(planner.PathFound())
             {
                 double cost = planner.ComputePath(state_path);
-                //final path visualization here -- TODO
+
+                //final path visualization
+                visualization_msgs::Marker path_marker = visualize_path_msg(state_path);
+                path_viz_pub.publish(path_marker);
 
                 if(!print_path_info)
                 {

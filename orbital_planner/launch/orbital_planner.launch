@@ -1,0 +1,17 @@
+<launch>
+
+<arg name="gui" default="true" />
+<arg name="model" default="$(find orbital_visualization)/config/Simple_Spacecraft.urdf"/>
+
+<!-- RRT/plan visualization node -->
+<node pkg="orbital_planner" type="orbital_planner_node" name="orbital_planner" output="screen"/>
+
+<!-- spacecraft visualization
+<param name="robot_description" command="$(find xacro)/xacro $(arg model)" />
+<node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
+<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" /> -->
+
+<!-- rviz launch -->
+<node pkg="rviz" type="rviz" name="rviz" args="-d $(find orbital_planner)/config/orbital_planner.rviz"/>
+
+</launch>
