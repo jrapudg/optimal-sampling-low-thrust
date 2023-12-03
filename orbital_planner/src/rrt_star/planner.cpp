@@ -10,15 +10,7 @@ State convertArrayToState(const double* array) {
     return state;
 }
 
-static void plannerRRTStar(
-    double *start_state,
-    double *goal_state,
-    double ***plan,
-    int *planlength)
-{	
 
-
-}
 
 int main(int argc, char** argv) 
 {
@@ -40,21 +32,57 @@ int main(int argc, char** argv)
 
 
     std::cout << std::endl << "******WELCOME TO LQR-RRT* MY FRIEND*****" << std::endl;
-	RRT_Star_Planner planner_rrt_star = RRT_Star_Planner(start_state, goal_state, &plan, &plan_length);
+
+
+	RRTStar planner = RRTStar(start_state, goal_state, &plan, &plan_length);
+	std::vector<State> state_path;
 														 
 														 
 	std::cout << "---- Starting LQR-RRT* ----" << std::endl;
-	planner_rrt_star.FindPath(start_state, goal_state);
+
+
+	auto start = std::chrono::high_resolution_clock::now();
+	int i = 0;
 
 
 
+	while (!planner.PathFound() && i < RRT_STAR_NUM_ITER) 
+	{
+		std::cout << "Iteration " << i << std::endl;
+		
+		planner.Iterate();
+		i++;
 
-	std::cout << "Graph Nodes: " << planner_rrt_star.tree.list.size() << std::endl;
-	if (!planner_rrt_star.path_found){
+	}
+
+	
+	double cost = planner.ComputePath(state_path);
+
+	// Here is the full path you need 
+	for (auto state : state_path)
+	{
+		Print(state, "here we go");
+	}
+
+
+	const Tree* tree = planner.GetTree();
+
+	
+	std::cout << "Finished planning with " << i + 1 << " samples!" << std::endl;
+	std::cout << "Quadratic State Cost " << cost << std::endl;
+	std::cout << "PATH SIZE: " << plan_length << std::endl;
+	std::cout << "RESULT -> SOLUTION FOUND!" << std::endl;
+	auto end = std::chrono::high_resolution_clock::now();
+	auto time_elapsed_milli = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+	std::cout << "TIME: " << (double) time_elapsed_milli/1000 << std::endl;
+
+
+
+	std::cout << "Graph Nodes: " << tree->list.size() << std::endl;
+	if (!planner.PathFound()){
 		std::cout << "RESULT -> PATH NOT FOUND WITH RRT-STAR" << std::endl;
 	}
 	std::cout << "*******PLAN DONE*******" << std::endl << std::endl;
-
 
 
 

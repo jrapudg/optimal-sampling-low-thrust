@@ -43,11 +43,67 @@ using namespace Astrodynamics;
 using namespace Optimal;
 using namespace Simulation;
 
-class RRT_Star_Planner{
+class RRTStar{
 	
 	
 	public:
-		// Attributes
+
+
+		// Dynamics
+		MatrixA A;
+		MatrixB B;
+		MatrixA Ad;
+		MatrixB Bd;
+
+		Simulator sim;
+
+
+		RRTStar(State& starting_configuration, State& goal_configuration, double ***_plan, int *_plan_length);
+
+
+		// Sample State - Goal Biased 
+		void SampleConfiguration(State& sample_state, State& goal_state, bool& path_found);
+		
+
+		// Rewire function
+		void Rewire(Tree& tree, std::shared_ptr<Graph_Node>& new_state_node, std::shared_ptr<Graph_Node>& parent_node, std::vector<std::shared_ptr<Graph_Node>>& near_nodes);
+
+
+		double ComputePath(std::vector<State>& state_path);
+		void SteerTowards(Tree& tree, State& sample_state, std::shared_ptr<Graph_Node>& nearest_node, State& next_state, Control& policy);
+		void Step(MatrixA& A, MatrixB& B, MatrixK& K, const State& state, State& target_state, State& next_state, Control& control);
+
+		// Do one iteration of LQR-RRT*
+		void Iterate();
+
+		// Returns True if an initial path has been found 
+		bool PathFound();
+		void Reset();
+
+		// Returns a pointer to the current Tree 
+		const Tree* GetTree() const;
+
+
+		// Linearize and discretize 
+		void UpdateLinearizedDiscreteDynamicsAround(const State& x, const Control& u);
+
+		// Backtrack from the specified node to get the path from start node 
+		void BacktrackToStart(std::vector<std::shared_ptr<Graph_Node>>& path, std::shared_ptr<Graph_Node> last_node_ptr);
+
+		// Compute Quadratic Cost of the Path
+		double ComputeQuadraticCost(const std::vector<std::shared_ptr<Graph_Node>>& path, const State& goal_state);
+
+
+
+
+
+		// Utils Methods
+		void _sample_goal_biased_config(State& sample_state, State& goal_state);
+		void _sample_local_biased_config(State& sample_state);
+
+
+	private:
+
 		State start_config;
 		State goal_config;
 		double ***plan;
@@ -65,21 +121,14 @@ class RRT_Star_Planner{
         std::uniform_real_distribution<double> distribution_local_bias;
 		OrbitalSampler sampler;
 
-		// Dynamics
-		MatrixA A;
-		MatrixB B;
-		MatrixA Ad;
-		MatrixB Bd;
 
-		Simulator sim;
 
 		// LQR
+		LQR lqr;
 		MatrixQ Q;
 		MatrixR R;
 		MatrixS S;
 		MatrixK K;
-
-		LQR lqr;
 		Control zero_control;
 
 		// Tree
@@ -89,14 +138,6 @@ class RRT_Star_Planner{
 		std::shared_ptr<Graph_Node> new_state_node;
 
 
-		RRT_Star_Planner(State& starting_configuration, State& goal_configuration, double ***_plan, int *_plan_length);
-
-		// Methods
-		// Sample State 
-		void SampleConfiguration(State& sample_state, bool& path_found);
-		// Sample State Goal Biased
-		void SampleConfiguration(State& sample_state, State& goal_state, bool& path_found);
-		
 		// Find nearest states 
 		// Need to change distance function in kd_tree.cpp to LQR distance
 		std::shared_ptr<Graph_Node> FindNearestStateTo(Tree& tree, State& state, MatrixS& S);
@@ -112,23 +153,9 @@ class RRT_Star_Planner{
 		// Choose Parent
 		void ChooseParent(Tree& tree, std::shared_ptr<Graph_Node>& new_state_node, std::shared_ptr<Graph_Node>& parent_node, std::vector<std::shared_ptr<Graph_Node>>& near_nodes, MatrixS& S_new);
 
-		// Rewire function
-		void Rewire(Tree& tree, std::shared_ptr<Graph_Node>& new_state_node, std::shared_ptr<Graph_Node>& parent_node, std::vector<std::shared_ptr<Graph_Node>>& near_nodes);
-
-		// Compute the path from that node - backtracking all parents
-		double ComputePath(std::shared_ptr<Graph_Node> node);
-		void SteerTowards(Tree& tree, State& sample_state, std::shared_ptr<Graph_Node>& nearest_node, State& next_state);
-		void Step(MatrixA& A, MatrixB& B, MatrixK& K, const State& state, State& target_state, State& next_state);
-
-		void FindPath(State& start_state, State& goal_state);
-
-		// Linearize and discretize 
-		void UpdateLinearizedDiscreteDynamicsAround(const State& x, const Control& u);
 
 
-		// Utils Methods
-		void _sample_goal_biased_config(State& sample_state, State& goal_state);
-		void _sample_local_biased_config(State& sample_state);
+
 };
 
 #endif // RRT_STAR_H

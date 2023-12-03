@@ -62,6 +62,7 @@ void LQR::ComputeCostMatrix(const MatrixA& A, const MatrixB& B, MatrixS& S,doubl
 {
     // TODO ensure Q is symmetric and pd, R is pd
     _SolveRicatti(A, B, S, tol, DEBUG);
+
 }
 
 
@@ -134,6 +135,7 @@ void LQR::_SolveRicatti(const MatrixA& A, const MatrixB& B, MatrixS& S, double t
         d = (S - Sp).array().abs().sum();
 
         if (DEBUG){i = ii;};
+         
     }
     if (DEBUG)
     {
