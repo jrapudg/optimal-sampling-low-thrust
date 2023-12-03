@@ -1,31 +1,18 @@
 #ifndef PLANNER_H
 #define PLANNER_H
 
-/*=================================================================
- *
- * planner.c
- *
- *=================================================================*/
+
 #include "rrt_star.hpp"
 #include "utils.hpp"
 #include "../dynamics/astrodynamics.hpp"
 
 #include <math.h>
-#include <random>
 #include <vector>
 #include <array>
-#include <algorithm>
-#include <unordered_map>
-#include <queue>
-#include <stack>
-#include <memory>
-#include <chrono>
-#include <limits>
 
-#include <tuple>
 #include <string>
 #include <stdexcept>
-#include <regex> // For regex and split logic
+
 #include <iostream> // cout, endl
 #include <fstream> // For reading/writing files
 #include <assert.h> 

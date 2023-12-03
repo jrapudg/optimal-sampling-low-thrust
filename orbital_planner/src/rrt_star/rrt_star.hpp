@@ -14,7 +14,7 @@
 #define MAX_ANGLE 2*M_PI
 #define RRT_STAR_NUM_ITER 1000000 //500000
 #define RRT_STAR_STEP_EXTEND 1.0 //4.0
-#define RRT_STAR_GOAL_TOL 5.0 //2.0
+#define RRT_STAR_GOAL_TOL 2.0 //2.0
 
 #define RRT_STAR_DEBUG_REWIRING false
 #define RRT_STAR_DEBUG_LOCAL false
@@ -115,7 +115,8 @@ class RRT_Star_Planner{
 		// Rewire function
 		void Rewire(Tree& tree, std::shared_ptr<Graph_Node>& new_state_node, std::shared_ptr<Graph_Node>& parent_node, std::vector<std::shared_ptr<Graph_Node>>& near_nodes);
 
-		void ComputePath(std::shared_ptr<Graph_Node> node);
+		// Compute the path from that node - backtracking all parents
+		double ComputePath(std::shared_ptr<Graph_Node> node);
 		void SteerTowards(Tree& tree, State& sample_state, std::shared_ptr<Graph_Node>& nearest_node, State& next_state);
 		void Step(MatrixA& A, MatrixB& B, MatrixK& K, const State& state, State& target_state, State& next_state);
 

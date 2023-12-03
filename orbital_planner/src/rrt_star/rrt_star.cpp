@@ -40,17 +40,6 @@ lqr(LQR(Q, R))
     distribution_local_bias = std::uniform_real_distribution<double>(RRT_STAR_R_MIN, RRT_STAR_R_MAX);
     sampler = OrbitalSampler(seed);
 
-    // Dynamics initialization
-    //GetClohessyWiltshireMatrices(A, B);
-    //Simulator::Discretize(A, B, SIM_DT, Ad, Bd);
-
-
-
-    // LQR Initialization
-    //lqr.ComputeCostMatrix(Ad, Bd, S);
-    //K = lqr.ComputeOptimalGain(Ad, Bd, S);
-
-
     std::cout << "Finished initialization." << std::endl;
 }
 
@@ -58,13 +47,17 @@ lqr(LQR(Q, R))
 
 
 
-// Methods
-void RRT_Star_Planner::ComputePath(std::shared_ptr<Graph_Node> node){
+double RRT_Star_Planner::ComputePath(std::shared_ptr<Graph_Node> node)
+{
     std::cout << "Computing path ..." << std::endl;
     int DOF = start_node->config.rows();
     path.clear();
-
     path.insert(path.begin(), node);
+
+
+    // What matters is the control cost with all the policy used 
+    double cost = 0;
+
 
     while(node->parent != start_node){
         Print(node->config, "State");
@@ -74,7 +67,10 @@ void RRT_Star_Planner::ComputePath(std::shared_ptr<Graph_Node> node){
     }
     path.insert(path.begin(), start_node);
 
-    //no plan by default
+
+
+
+
     *plan = NULL;
     *plan_length = 0;
         
@@ -89,6 +85,9 @@ void RRT_Star_Planner::ComputePath(std::shared_ptr<Graph_Node> node){
         }*/
     }    
     *plan_length = path.size();
+
+
+    return cost;
 }
 
 
@@ -183,7 +182,7 @@ void RRT_Star_Planner::FindPath(State& start_state, State& goal_state){
             AddToTree(tree, goal_node, new_state_node, S);
 
 
-            ComputePath(goal_node);
+            double cost = ComputePath(goal_node);
 
             std::cout << "PATH SIZE: " << path.size() << std::endl;
             path_found = true;
@@ -201,50 +200,7 @@ void RRT_Star_Planner::FindPath(State& start_state, State& goal_state){
 
     }
 
-    /*for (int i = 0; i < RRT_STAR_NUM_ITER; i++) { 
-        // Sample 
-        std::cout << "Sample Configuration" << std::endl;
-        SampleConfiguration(state_rand, goal_state, path_found);
-        std::cout << "Sample ";
-        print_config(state_rand);
-
-
-
-        // LQRNearest
-        std::cout << "FindNearestStateTo" << std::endl;
-        auto nearest_node = FindNearestStateTo(tree, state_rand, S);
-        std::cout << "Start ";
-        print_config(nearest_node->config);
-        std::cout << "Cost " << nearest_node->g << std::endl;
-
-        // LQRSteer
-        std::cout << "SteerTowards" << std::endl;
-        State new_state;
-        SteerTowards(tree, state_rand, nearest_node, new_state);
-        std::cout << "New State ";
-        print_config(new_state);
-
-        std::cout << "Start ";
-        print_config(nearest_node->config);
-        std::cout << "Cost " << nearest_node->g << std::endl;
-
-        // Initialize new state as a node
-        std::cout << "CreateTreeNode" << std::endl;
-        new_state_node = CreateTreeNode(tree, new_state);
-
-        // LQRNear
-        std::cout << "FindNearestStates" << std::endl;
-        auto near_nodes = FindNearestStates(tree, new_state, S);
-        
-        std::cout << "ChooseParent" << std::endl;
-        ChooseParent(tree, new_state_node, parent_node, near_nodes);
-        std::cout << "Parent: ";
-        print_config(parent_node->config);
-
-        std::cout << "AddToTree" << std::endl;
-        AddToTree(tree, new_state_node, parent_node);
-        std::cout << "Rewire" << std::endl;
-        Rewire(tree, new_state_node, parent_node, near_nodes);
+    /*
 
         if(path_found){
             update_count++;
@@ -468,7 +424,7 @@ else{
 }*/
 
 // Utils Methods
-void RRT_Star_Planner::_sample_goal_biased_config(State& sample_state, State& goal_state){
+/*void RRT_Star_Planner::_sample_goal_biased_config(State& sample_state, State& goal_state){
     if(RRT_STAR_DEBUG_LOCAL){
         std::cout << "GOAL sampling ..." << std::endl;
     }
@@ -530,4 +486,4 @@ void RRT_Star_Planner::_sample_local_biased_config(State& sample_state){
         print_config(sample_state);
         std::cout << "Local sampling DONE!" << std::endl;
     }
-};
+};*/
