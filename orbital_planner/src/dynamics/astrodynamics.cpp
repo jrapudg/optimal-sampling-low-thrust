@@ -161,7 +161,8 @@ void OrbitalSampler::SampleOrbit(std::string region, State &sampled_eci_state)
     double mean_anom = Sample(0, 2 * M_PI); 
 
 
-    StateOE orbital_elements = {a, e, i, RAAN, arg_peri, mean_anom};
+    StateOE orbital_elements;
+    orbital_elements << a, e, i, RAAN, arg_peri, mean_anom;
 
     // Convert the orbital elements to an ECI state vector
     sampled_eci_state = OE2ECI(orbital_elements);
