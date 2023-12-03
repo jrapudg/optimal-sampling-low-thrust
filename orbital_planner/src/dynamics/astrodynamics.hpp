@@ -44,11 +44,12 @@ typedef Eigen::Matrix<double, 6, 3> MatrixB;
 
 
 // Default maximum distance and velocities for unform sampling in the LVLH frame (Clohessy-Wiltshire)
-#define MAX_DIST_LVLH 20.0
-#define MAX_VEL_LVLH 2.0
+#define MAX_DIST_LVLH 10
+#define MAX_VEL_LVLH 0.75
 
 // Assumed default mass of the spacecraft
 #define DEFAULT_MASS 100.0
+#define ASSUMED_SMA LEO_MAX
 
 
 // Dynamics function 
@@ -58,6 +59,8 @@ void CentralBody(const State& state, const Control& control, State& state_dot);
 void CentralBodyScaled(const State& state, const Control& control, State& state_dot);
 
 void CR3BP(const State& state, const Control& control, State& state_dot);
+
+void NonlinearRelativeKeplerianDynamics(const State& state, const Control& u, State& next_state);
 
 void ClohessyWiltshire(const State& state, const Control& control, State& next_state);
 

@@ -58,14 +58,11 @@ void LQR::SetR(const MatrixR& newR) {
     R = newR;
 }
 
-
-
-
-
 void LQR::ComputeCostMatrix(const MatrixA& A, const MatrixB& B, MatrixS& S,double tol, bool DEBUG)
 {
     // TODO ensure Q is symmetric and pd, R is pd
     _SolveRicatti(A, B, S, tol, DEBUG);
+
 }
 
 
@@ -138,24 +135,20 @@ void LQR::_SolveRicatti(const MatrixA& A, const MatrixB& B, MatrixS& S, double t
         d = (S - Sp).array().abs().sum();
 
         if (DEBUG){i = ii;};
+         
     }
     if (DEBUG)
     {
         std::cout << "Tolerance obtained: " << d << std::endl;
         std::cout << "Iteration count: " << i << std::endl;
     }
-
-
-
 }
 
-
-double LQR::ComputeCostToGo(State state, State target_state, MatrixS& S)
+double LQR::ComputeCostToGo(State state, State target_state, const MatrixS& S)
 {
     State xbar = target_state - state;
     return  (xbar.transpose() * S * xbar)(0,0);
 }
-
 
 MatrixK LQR::ComputeOptimalGain(MatrixA& A, MatrixB& B, MatrixS& S)
 {
@@ -164,22 +157,23 @@ MatrixK LQR::ComputeOptimalGain(MatrixA& A, MatrixB& B, MatrixS& S)
     return (r_LLT).solve(Bt * S * A);
 }
 
-
 Control LQR::ComputeOptimalPolicy(State current_state, MatrixA& A, MatrixB& B, MatrixS& S)
 {
     return - ComputeOptimalGain(A, B, S) * current_state;
 }
-
 
 double LQR::QuadraticCost(State& state, Control& control)
 {
     return (state.transpose() * Q * state + control.transpose() * R * control)(0);
 }
 
-
 double LQR::GetTrajectoryCost(State starting_state, State& goal_state, MatrixA& A, MatrixB& B, Simulation::Simulator& sim, double tol)
-{
-
+{   
+    std::cout << "Getting Trajectory cost ..." << std::endl;
+    std::cout << "Start ";
+    Print(starting_state);
+    std::cout << "Goal ";
+    Print(goal_state); 
     Control control;
 
     // Compute the Cost Matrix 
@@ -194,7 +188,7 @@ double LQR::GetTrajectoryCost(State starting_state, State& goal_state, MatrixA& 
 
     // Initial cost     
     double J = 0;
-    control = K * current_state;
+    control = - K * (current_state - goal_state);
     J += QuadraticCost(current_state, control);
 
 
@@ -203,18 +197,18 @@ double LQR::GetTrajectoryCost(State starting_state, State& goal_state, MatrixA& 
         //std::cout << "-----------" << std::endl;
         //std::cout << "Current state: \n" << current_state << std::endl;
         // Optimal policy
-        control = - K * current_state;
+        control = - K * (current_state - goal_state);
 
         //std::cout << "Control: \n" << control << std::endl;
 
         sim.Step(current_state, control, next_state);
         //next_state = A * current_state + B * control;
 
-        //std::cout << "Next state: " << next_state << std::endl;
+        Print(next_state);
 
         J += QuadraticCost(next_state, control);
 
-        //std::cout << "Residual " << (current_state - goal_state).squaredNorm() << std::endl;
+        std::cout << "Residual " << (current_state - goal_state).squaredNorm() << std::endl;
 
         if ((current_state - goal_state).squaredNorm() <= tol)
         {
@@ -226,20 +220,18 @@ double LQR::GetTrajectoryCost(State starting_state, State& goal_state, MatrixA& 
         }
 
         //std::cout << "J --- " << J << std::endl;
-        //usleep(100000);
+        usleep(1000);
 
 
     }
 
     return J;
 
-
-
 }
 
 }
 
-
+/*
 int main()
 {
 
@@ -248,7 +240,7 @@ int main()
     using namespace Optimal;
     using namespace Simulation;
 
-    double dt = 0.1;
+    double dt = 1;
 
     // Clohessy-Wiltshire 6D 
     
@@ -264,7 +256,7 @@ int main()
     //std::cout << "Ad: \n" << Ad << std::endl;
     //std::cout << "Bd: \n" << Bd << std::endl;
 
-    MatrixQ Q = Eigen::MatrixXd::Identity(6, 6) * 5;
+    MatrixQ Q = Eigen::MatrixXd::Identity(6, 6);
     MatrixR R = Eigen::MatrixXd::Identity(3, 3);
 
 
@@ -277,10 +269,10 @@ int main()
 
     Simulator sim(ClohessyWiltshire, dt);
     //State starting_state = {5.0, 2.0, -1.0, -0.2, 0.0, -0.49};
-    State starting_state = {-3, 2, 1.3, -0.2, 0.3, -0.2};
-    
+
+    State starting_state = {-2.17495, 2.00354, 0.211689, 0.20699, -0.134153, -0.0807519};
     //State goal_state = {0.0,0.0,0.0,0,0,0};
-    State goal_state = {-2.17495, 2.00354, 0.211689, 0.20699, -0.134153, -0.0807519};
+    State goal_state = {-3, 2, 1.3, -0.2, 0.3, -0.2};
 
     double J = lqr.GetTrajectoryCost(starting_state, goal_state, Ad, Bd, sim);
     std::cout << J << std::endl;
@@ -288,4 +280,7 @@ int main()
     return 0;
 
 }
+
+
+*/
 
