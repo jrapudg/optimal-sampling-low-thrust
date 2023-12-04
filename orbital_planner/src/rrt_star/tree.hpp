@@ -25,6 +25,9 @@ struct Graph_Node {
 
     Optimal::MatrixS S;
 
+	//Save the K matrix to get a free TVLQR controller
+	Optimal::MatrixK K;
+
     // Constructor
     Graph_Node(int _i, const Astrodynamics::State& _config) : index(_i), config(_config) {
         // config is directly initialized using the initializer list
@@ -50,7 +53,7 @@ class Tree {
 
 		// Methods
 		std::shared_ptr<Graph_Node> add_vertex(const Astrodynamics::State& config);
-		void add_edge(std::shared_ptr<Graph_Node> node, std::shared_ptr<Graph_Node> parent_node, const Optimal::MatrixS& S);
+		void add_edge(std::shared_ptr<Graph_Node> node, std::shared_ptr<Graph_Node> parent_node, const Optimal::MatrixS& S, const Optimal::MatrixK& K);
 		std::shared_ptr<Graph_Node> find_nearest_neighbor(const Astrodynamics::State& target, const Optimal::MatrixS& S);
 		std::vector<std::shared_ptr<Graph_Node>> find_neighbors_within_radius(const Astrodynamics::State& target, const Optimal::MatrixS& S, double radius, int k_neighbors);
 		int get_current_index();

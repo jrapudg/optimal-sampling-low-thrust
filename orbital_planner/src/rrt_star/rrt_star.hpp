@@ -148,12 +148,10 @@ class RRTStar{
 
 		// Tree methods
 		std::shared_ptr<Graph_Node> CreateTreeNode(Tree& tree, State& state);
-		void AddToTree(Tree& tree, std::shared_ptr<Graph_Node> state_node, std::shared_ptr<Graph_Node> parent_state_node, MatrixS& S);
+		void AddToTree(Tree& tree, std::shared_ptr<Graph_Node> state_node, std::shared_ptr<Graph_Node> parent_state_node, MatrixS& S, MatrixK& K);
 		
 		// Choose Parent
 		void ChooseParent(Tree& tree, std::shared_ptr<Graph_Node>& new_state_node, std::shared_ptr<Graph_Node>& parent_node, std::vector<std::shared_ptr<Graph_Node>>& near_nodes, MatrixS& S_new);
-
-
 
 
 };

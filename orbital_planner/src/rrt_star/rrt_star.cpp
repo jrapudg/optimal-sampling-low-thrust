@@ -129,6 +129,35 @@ double RRTStar::ComputePath(std::vector<State>& state_path)
     return cost;
 }
 
+//this function defines a region in the state space that is a no fly zone
+bool NoFlyZone(State &state)
+{
+    // double no_fly_x_min = -5; 
+    // double no_fly_x_max = -4; 
+    // double no_fly_y_min =  2; 
+    // double no_fly_y_max = 2.5; 
+    // double no_fly_z_min = 3; 
+    // double no_fly_z_max = 4;
+
+    double no_fly_x_min = -3; 
+    double no_fly_x_max = -2; 
+    double no_fly_y_min =  2; 
+    double no_fly_y_max = 2.5; 
+    double no_fly_z_min = 2; 
+    double no_fly_z_max = 3; 
+
+    if (state[0] >= no_fly_x_min && state[0] <= no_fly_x_max && state[1] >= no_fly_y_min && state[1] <= no_fly_y_max && state[2] >= no_fly_z_min && state[2] <= no_fly_z_max)
+    {
+        //it is an invalid
+        return false; 
+    }
+    else
+    {
+        return true; 
+    }
+
+
+}   
 
 
 void RRTStar::Iterate()
@@ -160,9 +189,16 @@ void RRTStar::Iterate()
     //std::cout << "Optimal Gain: " << K << std::endl;
     State new_state;
     Control policy_used;
+    //this steer is just by one timestep currently
     SteerTowards(tree, sampled_state, nearest_node, new_state, policy_used);
     Print(new_state, "After steering");
 
+    //check if the new state is in the no fly zone. if it is, don't add it to the tree...
+    if (!ValidState(new_state))
+    {
+        std::cout << "Invalid state" << std::endl;
+        return;
+    }
 
 
     // Initialize new state as a node
@@ -187,7 +223,7 @@ void RRTStar::Iterate()
 
     // AddToTree
     //std::cout << "AddToTree" << std::endl;
-    AddToTree(tree, new_state_node, parent_node, S);
+    AddToTree(tree, new_state_node, parent_node, S, K);
     Print(parent_node->config, "Parent");
     //std::cout << "Node cost with that parent " << new_state_node->g << std::endl;
     
@@ -205,7 +241,7 @@ void RRTStar::Iterate()
     {
         goal_node = CreateTreeNode(tree, goal_config);
         goal_node->g = 0;
-        AddToTree(tree, goal_node, new_state_node, S);
+        AddToTree(tree, goal_node, new_state_node, S, K);
         path_found = true;
     }
 
@@ -327,7 +363,7 @@ void RRTStar::Rewire(Tree& tree,
                 Print(near_node->config, "Child near");
             }
 
-
+            std::cout << "REWIRINGGGGGGGGGGGGGGGGGG ..." << std::endl;
             near_node->parent = new_state_node;
             near_node->g = new_state_node->g + config_distance(new_state_node->config, near_node->config, near_node->S);
 
@@ -342,12 +378,16 @@ std::shared_ptr<Graph_Node> RRTStar::CreateTreeNode(Tree& tree, State& state){
     return tree.add_vertex(state);
 };
 
-void RRTStar::AddToTree(Tree& tree, std::shared_ptr<Graph_Node> state_node, std::shared_ptr<Graph_Node> parent_state_node, MatrixS& S){
-    tree.add_edge(state_node, parent_state_node, S);
+void RRTStar::AddToTree(Tree& tree, std::shared_ptr<Graph_Node> state_node, std::shared_ptr<Graph_Node> parent_state_node, MatrixS& S, MatrixK& K){
+    tree.add_edge(state_node, parent_state_node, S, K);
 };
 
+// Check if the state is valid
 bool RRTStar::ValidState(State& state){
-    return true;
+
+    bool valid_state = NoFlyZone(state);
+
+    return valid_state;
 }
 
 std::shared_ptr<Graph_Node> RRTStar::FindNearestStateTo(Tree& tree, State& state, MatrixS& S){

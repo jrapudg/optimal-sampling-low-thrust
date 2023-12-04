@@ -19,9 +19,11 @@ std::shared_ptr<Graph_Node> Tree::add_vertex(const State& config){
     return node;
 }
 
-void Tree::add_edge(std::shared_ptr<Graph_Node> node, std::shared_ptr<Graph_Node> parent_node, const MatrixS& S){
+//when adding the edge, we need to add the K matrix as well
+void Tree::add_edge(std::shared_ptr<Graph_Node> node, std::shared_ptr<Graph_Node> parent_node, const MatrixS& S, const MatrixK& K){
     node->parent = parent_node;
     node->S = S;
+    node->K = K;
     //node->g = parent_node->g + config_distance(node->config, parent_node->config);
 }
 
