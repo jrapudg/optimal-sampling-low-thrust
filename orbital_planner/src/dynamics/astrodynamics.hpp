@@ -28,7 +28,7 @@ typedef Eigen::Matrix<double, 6, 3> MatrixB;
 
 
 // Astrodynamics constrants 
-#define MU 3.986004418e14
+#define MU 3.986004418e14 //m^3/s^2
 #define G 6.67430e-11
 #define M 5.9722e24
 
@@ -117,7 +117,7 @@ bool CheckOrbitalElements(const StateOE& orbital_elements);
 
 Vector toEigen(std::vector<double> v);
 
-State OE2ECI(const StateOE& orbital_elements);
+void OE2ECI(const StateOE& orbital_elements, State& x);
 
 StateOE ECI2OE(const State& eci_state);
 

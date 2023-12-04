@@ -124,7 +124,9 @@ void OrbitalSampler::SampleOrbit(const StateOE& orb_elem_min, const StateOE& orb
         orbital_elements[i] = Sample(orb_elem_min[i], orb_elem_max[i]);
     }
 
-    sampled_eci_state = OE2ECI(orbital_elements);
+    // Convert the orbital elements to an ECI state vector
+    State sampled_eci_state;
+    OE2ECI(orbital_elements, sampled_eci_state);
 
 }
 
@@ -165,7 +167,8 @@ void OrbitalSampler::SampleOrbit(std::string region, State &sampled_eci_state)
     orbital_elements << a, e, i, RAAN, arg_peri, mean_anom;
 
     // Convert the orbital elements to an ECI state vector
-    sampled_eci_state = OE2ECI(orbital_elements);
+    State sampled_eci_state;
+    OE2ECI(orbital_elements, sampled_eci_state);
 }
 
 
@@ -294,13 +297,66 @@ void CR3BP(const State &state, const Control &control, State &state_dot)
 }
 
 
-
-
-
-State OE2ECI(const StateOE& orbital_elements)
+double mean_to_eccentric_anomaly(double Ma, double e)
 {
-    // TODO
-    return State();
+    //root finding equation for eccentric anomaly
+
+    //intial guess for E
+    double E = Ma;
+    double residual = E - e * sin(E) - Ma;
+    double tol = 1e-10;
+    int max_iter = 100;
+
+    for (int i = 0; i < max_iter; i++)
+    {
+        if (abs(residual) < tol)
+        {
+            break;
+        }
+        else
+        {
+            //Newtons method. iteratively updating E
+            E = E - residual / (1 - e * cos(E));
+            residual = E - e * sin(E) - Ma;
+        }
+    }
+
+
+    return E;
+}
+
+
+void OE2ECI(const StateOE& oe, State& x)
+{
+    double a = oe[0];  // semi-major axis
+    double e = oe[1]; // eccentricity
+    double i = oe[2]; // inclination
+    double RAAN = oe[3]; //RAAN
+    double omega = oe[4]; // argument of perigee
+    double Ma = oe[5]; //mean anomaly
+
+
+    // mean anomaly to eccentric anomaly
+    double E = mean_to_eccentric_anomaly(Ma, e);
+
+    //create perifocal coordinate vectors 
+    Eigen::VectorXd P(3);
+
+    P[0] = cos(omega)*cos(RAAN) - sin(omega)*cos(i)*sin(RAAN);
+    P[1] = cos(omega)*sin(RAAN) + sin(omega)*cos(i)*cos(RAAN);
+    P[2] = sin(omega)*sin(i);
+
+    Eigen::VectorXd Q(3);
+    Q[0] = -sin(omega)*cos(RAAN) - cos(omega)*cos(i)*sin(RAAN);
+    Q[1] = -sin(omega)*sin(RAAN) + cos(omega)*cos(i)*cos(RAAN);
+    Q[2] =  cos(omega)*sin(i);
+
+
+    //find the state
+    //access x[0:2]
+    x.segment(0,3) = a*(cos(E)-e)*P + a*sqrt(1-e*e)*sin(E)*Q;
+    //access x[3:5]
+    x.segment(3,3) = sqrt(MU*a)/(x.segment(0,3)).norm()*(-sin(E)*P + sqrt(1-e*e)*cos(E)*Q);
 }
 
 StateOE ECI2OE(const State& eci_state)
