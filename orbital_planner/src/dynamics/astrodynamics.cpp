@@ -30,7 +30,7 @@ bool CheckOrbitalElements(const StateOE& orbital_elements)
         throw std::runtime_error("Eccentricity (e) must be in the range [0, 1).");
         //return false;
     }
-    if (i < 0.0 || i >= 2 * M_PI) {
+    if (i < 0.0 || i >= M_PI) {
         throw std::runtime_error("Inclination (i) must be in the range [0, 2π).");
         //return false;
     }
@@ -125,7 +125,6 @@ void OrbitalSampler::SampleOrbit(const StateOE& orb_elem_min, const StateOE& orb
     }
 
     // Convert the orbital elements to an ECI state vector
-    State sampled_eci_state;
     OE2ECI(orbital_elements, sampled_eci_state);
 
 }
@@ -167,7 +166,6 @@ void OrbitalSampler::SampleOrbit(std::string region, State &sampled_eci_state)
     orbital_elements << a, e, i, RAAN, arg_peri, mean_anom;
 
     // Convert the orbital elements to an ECI state vector
-    State sampled_eci_state;
     OE2ECI(orbital_elements, sampled_eci_state);
 }
 
@@ -318,6 +316,7 @@ double mean_to_eccentric_anomaly(double Ma, double e)
             //Newtons method. iteratively updating E
             E = E - residual / (1 - e * cos(E));
             residual = E - e * sin(E) - Ma;
+
         }
     }
 
@@ -339,14 +338,17 @@ void OE2ECI(const StateOE& oe, State& x)
     // mean anomaly to eccentric anomaly
     double E = mean_to_eccentric_anomaly(Ma, e);
 
+    std::cout << "E: " << E << std::endl;
+
+
     //create perifocal coordinate vectors 
-    Eigen::VectorXd P(3);
+    Eigen::Matrix<double, 3, 1> P;
 
     P[0] = cos(omega)*cos(RAAN) - sin(omega)*cos(i)*sin(RAAN);
     P[1] = cos(omega)*sin(RAAN) + sin(omega)*cos(i)*cos(RAAN);
     P[2] = sin(omega)*sin(i);
 
-    Eigen::VectorXd Q(3);
+    Eigen::Matrix<double, 3, 1>  Q;
     Q[0] = -sin(omega)*cos(RAAN) - cos(omega)*cos(i)*sin(RAAN);
     Q[1] = -sin(omega)*sin(RAAN) + cos(omega)*cos(i)*cos(RAAN);
     Q[2] =  cos(omega)*sin(i);
