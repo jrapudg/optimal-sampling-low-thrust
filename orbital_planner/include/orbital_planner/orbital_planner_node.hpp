@@ -138,7 +138,7 @@ visualization_msgs::Marker visualize_agent_msg(State state, std::string local_fr
     }
     
     tf::Quaternion orientation;
-    orientation.setRPY(roll, pitch - (M_PI/2.0), yaw);
+    orientation.setRPY(roll, pitch, yaw);
 
     m.pose.position.x = state[0];
     m.pose.position.y = state[1];
