@@ -6,6 +6,8 @@
 <!-- RRT/plan visualization node -->
 <node pkg="orbital_planner" type="orbital_planner_node" name="orbital_planner" output="screen"/>
 
+<node pkg="tf2_ros" type="static_transform_publisher" name="link1_broadcaster" args="0 0 0 0 0 0 1 map world" />
+
 <!-- spacecraft visualization
 <param name="robot_description" command="$(find xacro)/xacro $(arg model)" />
 <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />

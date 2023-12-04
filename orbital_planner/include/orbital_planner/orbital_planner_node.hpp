@@ -2,6 +2,7 @@
 #include "ros/ros.h"
 #include "std_msgs/String.h"
 #include "visualization_msgs/Marker.h"
+#include <tf/transform_datatypes.h>
 
 // LQR-RRT* includes
 #include "orbital_planner/utils.hpp"
@@ -102,6 +103,49 @@ visualization_msgs::Marker visualize_path_msg(std::vector<State> path, std::stri
 
 }
 
+visualization_msgs::Marker visualize_agent_msg(std::vector<double> pose, std::string local_frame="map")
+{
+    visualization_msgs::Marker m;
+    m.header.frame_id = local_frame;
+    m.header.stamp = ros::Time();
+    m.ns = "agent";
+    m.id = 0;
+    m.type = visualization_msgs::Marker::MESH_RESOURCE;
+    m.action = visualization_msgs::Marker::ADD;
+    m.mesh_resource = "package://orbital_planner/config/dragon_centered.stl";
+    // m.mesh_use_embedded_materials = true;
+
+    double vec_mag = std::sqrt(std::pow(pose[3],2) + std::pow(pose[4],2) + std::pow(pose[5],2));
+    
+    double norm_vel_x = pose[3] / vec_mag;
+    double norm_vel_y = pose[4] / vec_mag;
+    double norm_vel_z = pose[5] / vec_mag;
+
+    double yaw = std::atan2(norm_vel_x, norm_vel_z);
+    double pitch = std::atan2(norm_vel_y, norm_vel_z);
+    double roll = std::asin(norm_vel_x);
+
+    tf::Quaternion orientation;
+    orientation.setRPY(roll, pitch, yaw);
+
+    m.pose.position.x = pose[0];
+    m.pose.position.y = pose[1];
+    m.pose.position.z = pose[2];
+    m.pose.orientation.x = orientation.x();
+    m.pose.orientation.y = orientation.y();
+    m.pose.orientation.z = orientation.z();
+    m.pose.orientation.w = orientation.w();
+    m.scale.x = 0.001;
+    m.scale.y = 0.001;
+    m.scale.z = 0.001;
+    // Set the color (RGBA values)
+    m.color.r = 1.0;
+    m.color.g = 1.0;
+    m.color.b = 1.0;
+    m.color.a = 1.0;
+    return m;
+}
+
 class OrbitalPlannerNode
 {
 //everything public for now
@@ -113,12 +157,15 @@ public:
 
     ros::Publisher tree_viz_pub;
     ros::Publisher path_viz_pub;
+    ros::Publisher agent_viz_pub;
 
     OrbitalPlannerNode(ros::NodeHandle &nh, double rate)
     : nh(nh), loop_rate(rate)
     {
         tree_viz_pub = nh.advertise<visualization_msgs::Marker>("tree_visualization", 10);
         path_viz_pub = nh.advertise<visualization_msgs::Marker>("path_visualization", 10);
+        agent_viz_pub = nh.advertise<visualization_msgs::Marker>("agent_visualization", 10);
+
         ROS_INFO_STREAM("Orbital Planner Initialization Complete!");
     }
 
@@ -156,6 +203,10 @@ public:
             const Tree* tree = planner.GetTree();
             visualization_msgs::Marker tree_marker = visualize_tree_msg(tree);
             tree_viz_pub.publish(tree_marker);
+
+            //visualize agent pose
+            visualization_msgs::Marker agent_marker = visualize_agent_msg({8,2.4,7.3,-0.2,0.3,-0.2});
+            agent_viz_pub.publish(agent_marker);
 
             //main planning loop
             if(!planner.PathFound() && i < RRT_STAR_NUM_ITER)
