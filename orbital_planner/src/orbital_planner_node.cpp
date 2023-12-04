@@ -6,7 +6,7 @@
 int main(int argc, char** argv){
     ros::init(argc, argv, "orbital_planner_node");
     ros::NodeHandle nh;
-    double loop_rate = 10;
+    double loop_rate = 5;
 
     OrbitalPlannerNode planner_node(nh, loop_rate);
     planner_node.run();

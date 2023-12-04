@@ -103,7 +103,7 @@ visualization_msgs::Marker visualize_path_msg(std::vector<State> path, std::stri
 
 }
 
-visualization_msgs::Marker visualize_agent_msg(std::vector<double> pose, std::string local_frame="map")
+visualization_msgs::Marker visualize_agent_msg(State state, std::string local_frame="map")
 {
     visualization_msgs::Marker m;
     m.header.frame_id = local_frame;
@@ -115,22 +115,32 @@ visualization_msgs::Marker visualize_agent_msg(std::vector<double> pose, std::st
     m.mesh_resource = "package://orbital_planner/config/dragon_centered.stl";
     // m.mesh_use_embedded_materials = true;
 
-    double vec_mag = std::sqrt(std::pow(pose[3],2) + std::pow(pose[4],2) + std::pow(pose[5],2));
+    double vec_mag = std::sqrt(std::pow(state[3],2) + std::pow(state[4],2) + std::pow(state[5],2));
+
+    double roll, pitch, yaw;
+    if(vec_mag != 0)
+    {
+        double norm_vel_x = state[3] / vec_mag;
+        double norm_vel_y = state[4] / vec_mag;
+        double norm_vel_z = state[5] / vec_mag;
+
+        yaw = std::atan2(norm_vel_x, norm_vel_z);
+        pitch = std::atan2(norm_vel_y, norm_vel_z);
+        roll = std::asin(norm_vel_x);
+    }
+    else
+    {
+        roll = 0.0;
+        pitch = 0.0;
+        yaw = 0.0;
+    }
     
-    double norm_vel_x = pose[3] / vec_mag;
-    double norm_vel_y = pose[4] / vec_mag;
-    double norm_vel_z = pose[5] / vec_mag;
-
-    double yaw = std::atan2(norm_vel_x, norm_vel_z);
-    double pitch = std::atan2(norm_vel_y, norm_vel_z);
-    double roll = std::asin(norm_vel_x);
-
     tf::Quaternion orientation;
     orientation.setRPY(roll, pitch, yaw);
 
-    m.pose.position.x = pose[0];
-    m.pose.position.y = pose[1];
-    m.pose.position.z = pose[2];
+    m.pose.position.x = state[0];
+    m.pose.position.y = state[1];
+    m.pose.position.z = state[2];
     m.pose.orientation.x = orientation.x();
     m.pose.orientation.y = orientation.y();
     m.pose.orientation.z = orientation.z();
@@ -179,6 +189,9 @@ public:
         State start_state = convertArrayToState(start_d);
         State goal_state = convertArrayToState(goal_d);
 
+        int waypoint_num = 0;
+        State curr_state = start_state;
+
         Print(start_state, "Start");
 	    Print(goal_state, "Goal");
 
@@ -205,7 +218,7 @@ public:
             tree_viz_pub.publish(tree_marker);
 
             //visualize agent pose
-            visualization_msgs::Marker agent_marker = visualize_agent_msg({8,2.4,7.3,-0.2,0.3,-0.2});
+            visualization_msgs::Marker agent_marker = visualize_agent_msg(curr_state);
             agent_viz_pub.publish(agent_marker);
 
             //main planning loop
@@ -222,6 +235,14 @@ public:
                 //final path visualization
                 visualization_msgs::Marker path_marker = visualize_path_msg(state_path);
                 path_viz_pub.publish(path_marker);
+
+                //update current waypoint
+                if(waypoint_num < state_path.size())
+                {
+                    curr_state = state_path[waypoint_num];
+                    waypoint_num += 1;
+                }
+
 
                 if(!print_path_info)
                 {
