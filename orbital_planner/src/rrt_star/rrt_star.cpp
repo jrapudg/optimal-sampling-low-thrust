@@ -123,6 +123,7 @@ double RRTStar::ComputePath(std::vector<State>& state_path)
         for(int j = 0; j < DOF; j++){
             (*plan)[i][j] = (path[i])->config[j];
         }
+
     }    
     *plan_length = path.size();
 
@@ -149,9 +150,23 @@ void RRTStar::Iterate()
     UpdateLinearizedDiscreteDynamicsAround(sampled_state, zero_control);
     // Compute the S matrix for the search of the nearest node
     lqr.ComputeCostMatrix(Ad, Bd, S);
+
+    // Add node rejection latter
+    if (path_found & RRT_STAR_NODE_REJECTION_ACTIVE){
+        double cost_to_start = config_distance(start_node->config, sampled_state, S); 
+        double cost_to_goal = config_distance(sampled_state, goal_node->config, S);
+
+        std::cout << "Current Path Cost: " << cost_goal << std::endl;
+        std::cout << "Current Sample Cost: " << cost_to_goal + cost_to_start << std::endl;
+        if (cost_to_goal + cost_to_start > 3*cost_goal){
+            std::cout << "Sample Rejected!" << std::endl;
+            return;
+        }
+        std::cout << "Sample Accepted!" << std::endl;
+    }
+
     std::shared_ptr<Graph_Node> nearest_node = FindNearestStateTo(tree, sampled_state, S);
     //Print(nearest_node->config, "FindNearestStateTo node");
-
 
     // LQRSteer
     // This new state represents the end of a trajectory executed with the LQR-Policy generated from the LQRNearest above with a pre-specified step size based on the cost
@@ -162,8 +177,6 @@ void RRTStar::Iterate()
     Control policy_used;
     SteerTowards(tree, sampled_state, nearest_node, new_state, policy_used);
     Print(new_state, "After steering");
-
-
 
     // Initialize new state as a node
     //std::cout << "CreateTreeNode" << std::endl;
@@ -202,7 +215,7 @@ void RRTStar::Iterate()
 
     std::cout << "Cost-to-go w.r.t to the GOAL: " << config_distance(new_state_node->config, goal_config, S) << std::endl;
     if (!path_found && are_configs_close(new_state_node->config, goal_config, S, RRT_STAR_GOAL_TOL))
-    {
+    { 
         goal_node = CreateTreeNode(tree, goal_config);
         goal_node->g = 0;
         AddToTree(tree, goal_node, new_state_node, S);
@@ -278,21 +291,35 @@ void RRTStar::ChooseParent(Tree& tree,
 
     for (auto near_node : near_nodes)
     {   
-        if (near_node->index != new_state_node->index)
-        {
-            // The cost here should the cost-to-go
-            current_cost = near_node->g + config_distance(near_node->config, new_state_node->config, S_new);
+        if (!path_found){
+            if (near_node->index != new_state_node->index)
+            {
+                // The cost here should the cost-to-go
+                current_cost = near_node->g + config_distance(near_node->config, new_state_node->config, S_new);
 
-            if (current_cost < new_state_node->g)
-            {   
-                // Changing the cost and parent here
-                parent_node = near_node;
-                new_state_node->g = current_cost;
+                if (current_cost < new_state_node->g)
+                {   
+                    // Changing the cost and parent here
+                    parent_node = near_node;
+                    new_state_node->g = current_cost;
+                }
             }
         }
+        else{
+            if ((near_node->index != new_state_node->index) && (near_node->index != goal_node->index))
+            {
+                // The cost here should the cost-to-go
+                current_cost = near_node->g + config_distance(near_node->config, new_state_node->config, S_new);
 
+                if (current_cost < new_state_node->g)
+                {   
+                    // Changing the cost and parent here
+                    parent_node = near_node;
+                    new_state_node->g = current_cost;
+                }
+            }
+        }
     }
-
 }
 
 
@@ -314,25 +341,46 @@ void RRTStar::Rewire(Tree& tree,
     {
         
         // Use of pre-computed S
-
-        if ((near_node != new_state_node) && (near_node != parent_node) && 
+        if (!path_found){
+            if ((near_node != new_state_node) && (near_node != parent_node) && 
             (near_node->g > new_state_node->g + config_distance(new_state_node->config, near_node->config, near_node->S)))
-        {
-            
-            if (RRT_STAR_DEBUG_REWIRING)
             {
                 
-                //std::cout << "Cost near: " << near_node->g << " Cost new: " << new_state_node->g + config_distance(new_state_node->config, near_node->config, S) << std::endl;
-                Print(new_state_node->config, "Parent");
-                Print(near_node->config, "Child near");
+                if (RRT_STAR_DEBUG_REWIRING)
+                {
+                    
+                    //std::cout << "Cost near: " << near_node->g << " Cost new: " << new_state_node->g + config_distance(new_state_node->config, near_node->config, S) << std::endl;
+                    Print(new_state_node->config, "Parent");
+                    Print(near_node->config, "Child near");
+                }
+
+
+                near_node->parent = new_state_node;
+                near_node->g = new_state_node->g + config_distance(new_state_node->config, near_node->config, near_node->S);
+
+
             }
-
-
-            near_node->parent = new_state_node;
-            near_node->g = new_state_node->g + config_distance(new_state_node->config, near_node->config, near_node->S);
-
-
         }
+        else{
+            if ((near_node != new_state_node) && (near_node != parent_node) && (near_node != parent_node) && 
+            (near_node->g > new_state_node->g + config_distance(new_state_node->config, near_node->config, near_node->S)))
+            {
+                
+                if (RRT_STAR_DEBUG_REWIRING)
+                {
+                    
+                    //std::cout << "Cost near: " << near_node->g << " Cost new: " << new_state_node->g + config_distance(new_state_node->config, near_node->config, S) << std::endl;
+                    Print(new_state_node->config, "Parent");
+                    Print(near_node->config, "Child near");
+                }
+
+
+                near_node->parent = new_state_node;
+                near_node->g = new_state_node->g + config_distance(new_state_node->config, near_node->config, near_node->S);
+
+
+            }
+        } 
     }
 }
 
@@ -362,7 +410,7 @@ std::vector<std::shared_ptr<Graph_Node>> RRTStar::FindNearestStates(Tree& tree, 
 void RRTStar::SampleConfiguration(State& sample_state, State& goal_state, bool& path_found){
 
     double p_value = static_cast<double>(rand()) / RAND_MAX;
-    if (p_value < RRT_STAR_GOAL_BIASED)
+    if ((p_value < RRT_STAR_GOAL_BIASED) && (!path_found))
     {
         sample_state = goal_state;
     }

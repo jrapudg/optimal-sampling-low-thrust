@@ -23,7 +23,7 @@
 #define RRT_STAR_GOAL_BIASED 0.2 //0.5
 #define RRT_STAR_LOCAL_BIASED 0.2 //0.5
 #define RRT_STAR_TIME_MAX 2990000000000000
-#define RRT_STAR_REF_MAX 49000000000000000
+#define RRT_STAR_REF_MAX 200000 // milliseconds
 #define RRT_STAR_STD_DEV 2.0
 #define RRT_STAR_R_MIN 0.1*RRT_STAR_STEP_EXTEND
 #define RRT_STAR_R_MAX 0.5*RRT_STAR_STEP_EXTEND
@@ -48,7 +48,8 @@ class RRTStar{
 	
 	public:
 
-
+		double cost_goal;
+		
 		// Dynamics
 		MatrixA A;
 		MatrixB B;
@@ -136,7 +137,6 @@ class RRTStar{
 		std::shared_ptr<Graph_Node> start_node;
 		std::shared_ptr<Graph_Node> goal_node;
 		std::shared_ptr<Graph_Node> new_state_node;
-
 
 		// Find nearest states 
 		// Need to change distance function in kd_tree.cpp to LQR distance

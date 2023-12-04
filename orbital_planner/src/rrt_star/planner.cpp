@@ -45,6 +45,8 @@ int main(int argc, char** argv)
 	int i = 0;
 
 
+	auto end = std::chrono::high_resolution_clock::now();
+	auto time_elapsed_milli = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
 	while (!planner.PathFound() && i < RRT_STAR_NUM_ITER) 
 	{
@@ -52,11 +54,12 @@ int main(int argc, char** argv)
 		
 		planner.Iterate();
 		i++;
-
+		end = std::chrono::high_resolution_clock::now();
+		time_elapsed_milli = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+		std::cout << "Time elapsed " << (double) time_elapsed_milli/1000 << " seconds" << std::endl;
 	}
 
-	
-	double cost = planner.ComputePath(state_path);
+	planner.cost_goal = planner.ComputePath(state_path);
 
 	// Here is the full path you need 
 	for (auto state : state_path)
@@ -69,12 +72,12 @@ int main(int argc, char** argv)
 
 	
 	std::cout << "Finished planning with " << i + 1 << " samples!" << std::endl;
-	std::cout << "Quadratic State Cost " << cost << std::endl;
+	std::cout << "Quadratic State Cost " << planner.cost_goal << std::endl;
 	std::cout << "PATH SIZE: " << plan_length << std::endl;
 	std::cout << "RESULT -> SOLUTION FOUND!" << std::endl;
-	auto end = std::chrono::high_resolution_clock::now();
-	auto time_elapsed_milli = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-	std::cout << "TIME: " << (double) time_elapsed_milli/1000 << std::endl;
+	end = std::chrono::high_resolution_clock::now();
+	time_elapsed_milli = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+	std::cout << "TIME: " << (double) time_elapsed_milli/1000 << " seconds" << std::endl;
 
 
 
@@ -82,10 +85,33 @@ int main(int argc, char** argv)
 	if (!planner.PathFound()){
 		std::cout << "RESULT -> PATH NOT FOUND WITH RRT-STAR" << std::endl;
 	}
-	std::cout << "*******PLAN DONE*******" << std::endl << std::endl;
+	std::cout << "*******FIRST PATH FOUND!*******" << std::endl << std::endl;
 
+	std::cout << "Refining path ..." << std::endl << std::endl;
+	while ((planner.PathFound() && i < RRT_STAR_NUM_ITER) && (time_elapsed_milli <= RRT_STAR_REF_MAX)) 
+	{
+		std::cout << "Iteration " << i << std::endl;
+		
+		planner.Iterate();
+		i++;
+		end = std::chrono::high_resolution_clock::now();
+		time_elapsed_milli = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+		std::cout << "Time elapsed " << (double) time_elapsed_milli/1000 << " seconds" << std::endl;
+	}
 
+	std::cout << "Time is over" << std::endl << std::endl;
 
+	planner.cost_goal = planner.ComputePath(state_path);
+
+	tree = planner.GetTree();
+	
+	std::cout << "Finished planning with " << i + 1 << " samples!" << std::endl;
+	std::cout << "Quadratic State Cost " << planner.cost_goal << std::endl;
+	std::cout << "PATH SIZE: " << plan_length << std::endl;
+	end = std::chrono::high_resolution_clock::now();
+	time_elapsed_milli = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+	std::cout << "TIME: " << (double) time_elapsed_milli/1000 << " seconds" << std::endl;
+	std::cout << "Graph Nodes: " << tree->list.size() << std::endl;
 
     // Your solution's path should start with start_d and end with goal_d
     if (!equalDoubleArrays(plan[0], start_d, n_dofs) || 
