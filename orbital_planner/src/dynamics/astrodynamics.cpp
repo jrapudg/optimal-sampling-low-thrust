@@ -116,7 +116,9 @@ double OrbitalSampler::Sample(double min, double max) {
 
 void OrbitalSampler::SampleOrbit(const StateOE& orb_elem_min, const StateOE& orb_elem_max, State &sampled_eci_state)
 {
-    
+    CheckOrbitalElements(orb_elem_min);
+    CheckOrbitalElements(orb_elem_max);
+
     StateOE orbital_elements;
 
     for (int i = 0; i < 6; ++i)
@@ -155,7 +157,7 @@ void OrbitalSampler::SampleOrbit(std::string region, State &sampled_eci_state)
 
     // Sample the semi-major axis within the specified range
     double a = Sample(min_sma, max_sma);
-    double e =Sample(0, 1.0); 
+    double e = Sample(0, 1.0); 
     double i = Sample(0, M_PI); 
     double RAAN = Sample(0, 2 * M_PI); 
     double arg_peri = Sample(0, 2 * M_PI);
@@ -164,6 +166,8 @@ void OrbitalSampler::SampleOrbit(std::string region, State &sampled_eci_state)
 
     StateOE orbital_elements;
     orbital_elements << a, e, i, RAAN, arg_peri, mean_anom;
+    Print(orbital_elements);
+    CheckOrbitalElements(orbital_elements);
 
     // Convert the orbital elements to an ECI state vector
     OE2ECI(orbital_elements, sampled_eci_state);
@@ -172,9 +176,56 @@ void OrbitalSampler::SampleOrbit(std::string region, State &sampled_eci_state)
 
 
 
-void OrbitalSampler::SampleAroundOrbit(const State &mean_eci_state, const StateOE& std_oe)
+void OrbitalSampler::SampleAroundOrbit(const State &mean_oe_state, const StateOE& std_oe, StateOE& resulting_oe)
+{ 
+    resulting_oe << mean_oe_state[0] + gaussian_dis(rng) * std_oe[0],
+                    mean_oe_state[1] + gaussian_dis(rng) * std_oe[1],
+                    mean_oe_state[2] + gaussian_dis(rng) * std_oe[2],
+                    mean_oe_state[3] + gaussian_dis(rng) * std_oe[3],
+                    mean_oe_state[4] + gaussian_dis(rng) * std_oe[4],
+                    mean_oe_state[5] + gaussian_dis(rng) * std_oe[5];
+
+    RegularizeOE(resulting_oe);
+    
+}
+
+
+void OrbitalSampler::RegularizeOE(StateOE& orbital_elements)
 {
-    // 
+    double tol = 1e-5;
+
+    for (int i = 1; i < 6; ++i)
+    {
+        if (orbital_elements[i] < 0.0)
+        {
+            orbital_elements[i] = 0.0;
+        }
+    }
+
+    if (orbital_elements[0] <= LEO_MIN) {  // Semi-major axis [m]
+        orbital_elements[0] = LEO_MIN; 
+    }
+    
+    if (orbital_elements[1] >= 1.0) { // Eccentricity [dimensionless]
+        orbital_elements[1] = 1.0 - tol;
+    }
+
+    if (orbital_elements[2] >= M_PI) { // Inclination [rad]
+        orbital_elements[2] = M_PI - tol;
+    }
+
+    if (orbital_elements[3] >= 2 * M_PI) { // Right Ascension of the Ascending Node (RAAN) [rad]
+        orbital_elements[3] = 2 * M_PI - tol;
+    }
+
+    if (orbital_elements[4] >= 2 * M_PI) { // Argument of Perigee [rad]
+        orbital_elements[4] = 2 * M_PI - tol;
+    }
+
+    if (orbital_elements[5] >= 2 * M_PI) {  // Mean anomaly [rad]
+        orbital_elements[5] = 2 * M_PI - tol;
+    }
+
 }
 
 
@@ -338,8 +389,6 @@ void OE2ECI(const StateOE& oe, State& x)
     // mean anomaly to eccentric anomaly
     double E = mean_to_eccentric_anomaly(Ma, e);
 
-    std::cout << "E: " << E << std::endl;
-
 
     //create perifocal coordinate vectors 
     Eigen::Matrix<double, 3, 1> P;
@@ -359,6 +408,7 @@ void OE2ECI(const StateOE& oe, State& x)
     x.segment(0,3) = a*(cos(E)-e)*P + a*sqrt(1-e*e)*sin(E)*Q;
     //access x[3:5]
     x.segment(3,3) = sqrt(MU*a)/(x.segment(0,3)).norm()*(-sin(E)*P + sqrt(1-e*e)*cos(E)*Q);
+    
 }
 
 StateOE ECI2OE(const State& eci_state)

@@ -81,10 +81,11 @@ class OrbitalSampler
         void SampleOrbit(std::string region, State &sampled_eci_state);
 
         // Sample within a given delta OE around the current orbit 
-        void SampleAroundOrbit(const State &mean_eci_state, const StateOE &std_oe);
+        void SampleAroundOrbit(const State &mean_oe_state, const StateOE& std_oe, StateOE& resulting_oe);
 
         void SampleCW(State &sampled_state, double max_dist_lvlh = MAX_DIST_LVLH, double max_vel_lvlh = MAX_VEL_LVLH);
 
+        static void RegularizeOE(StateOE& oe);
 
     private:
 
