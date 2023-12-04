@@ -2,7 +2,9 @@
 #include "ros/ros.h"
 #include "std_msgs/String.h"
 #include "visualization_msgs/Marker.h"
+#include "visualization_msgs/MarkerArray.h"
 #include <tf/transform_datatypes.h>
+#include <tf2/LinearMath/Quaternion.h>
 
 // LQR-RRT* includes
 #include "orbital_planner/utils.hpp"
@@ -136,7 +138,7 @@ visualization_msgs::Marker visualize_agent_msg(State state, std::string local_fr
     }
     
     tf::Quaternion orientation;
-    orientation.setRPY(roll, pitch, yaw);
+    orientation.setRPY(roll, pitch - (M_PI/2.0), yaw);
 
     m.pose.position.x = state[0];
     m.pose.position.y = state[1];
@@ -156,6 +158,36 @@ visualization_msgs::Marker visualize_agent_msg(State state, std::string local_fr
     return m;
 }
 
+visualization_msgs::Marker visualize_sampled_states_msg(std::vector<State> sampled_states, std::string local_frame="map")
+{
+    visualization_msgs::Marker m;
+    m.header.frame_id = local_frame;
+    m.header.stamp = ros::Time();
+    m.ns = "sampled_points";
+    m.id = 0;
+    m.type = visualization_msgs::Marker::SPHERE_LIST;
+    m.action = visualization_msgs::Marker::ADD;
+
+    for(State state : sampled_states)
+    {
+        geometry_msgs::Point point;
+        point.x = state[0];
+        point.y = state[1];
+        point.z = state[2];
+        m.points.push_back(point);
+    }
+
+    m.scale.x = 0.1;
+    m.scale.y = 0.1;
+    m.scale.z = 0.1;
+    m.color.a = 1.0;
+    m.color.r = 0.0;
+    m.color.g = 0.0;
+    m.color.b = 1.0;
+
+    return m;
+}
+
 class OrbitalPlannerNode
 {
 //everything public for now
@@ -168,6 +200,7 @@ public:
     ros::Publisher tree_viz_pub;
     ros::Publisher path_viz_pub;
     ros::Publisher agent_viz_pub;
+    ros::Publisher sampled_state_pub;
 
     OrbitalPlannerNode(ros::NodeHandle &nh, double rate)
     : nh(nh), loop_rate(rate)
@@ -175,6 +208,7 @@ public:
         tree_viz_pub = nh.advertise<visualization_msgs::Marker>("tree_visualization", 10);
         path_viz_pub = nh.advertise<visualization_msgs::Marker>("path_visualization", 10);
         agent_viz_pub = nh.advertise<visualization_msgs::Marker>("agent_visualization", 10);
+        sampled_state_pub = nh.advertise<visualization_msgs::Marker>("sampled_state_visualization", 10);
 
         ROS_INFO_STREAM("Orbital Planner Initialization Complete!");
     }
@@ -220,6 +254,10 @@ public:
             //visualize agent pose
             visualization_msgs::Marker agent_marker = visualize_agent_msg(curr_state);
             agent_viz_pub.publish(agent_marker);
+
+            //visualize sampled states
+            // std::vector<State> sampled_states = planner.GetSampledStates();
+            // sampled_state_pub.publish(m);
 
             //main planning loop
             if(!planner.PathFound() && i < RRT_STAR_NUM_ITER)

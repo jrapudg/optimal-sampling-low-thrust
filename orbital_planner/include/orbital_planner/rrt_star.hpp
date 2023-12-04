@@ -56,6 +56,7 @@ class RRTStar{
 		MatrixB Bd;
 
 		Simulator sim;
+		std::vector<State> sampled_states;
 
 
 		RRTStar(State& starting_configuration, State& goal_configuration, double ***_plan, int *_plan_length);
@@ -82,7 +83,9 @@ class RRTStar{
 
 		// Returns a pointer to the current Tree 
 		const Tree* GetTree() const;
-
+		
+		//returns sampled states
+		const std::vector<State> GetSampledStates() const;
 
 		// Linearize and discretize 
 		void UpdateLinearizedDiscreteDynamicsAround(const State& x, const Control& u);
@@ -120,7 +123,6 @@ class RRTStar{
         std::normal_distribution<double> distribution_rrt_star;
         std::uniform_real_distribution<double> distribution_local_bias;
 		OrbitalSampler sampler;
-
 
 
 		// LQR

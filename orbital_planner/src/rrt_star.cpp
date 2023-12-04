@@ -224,13 +224,16 @@ const Tree* RRTStar::GetTree() const
     return &tree; 
 }
 
+const std::vector<State> RRTStar::GetSampledStates() const
+{
+    return sampled_states;
+}
+
 void RRTStar::Reset()
 {
     path_found = false;
     // TODO clear all vectors and stuff
 }
-
-
 
 void RRTStar::UpdateLinearizedDiscreteDynamicsAround(const State& x, const Control& u)
 {
@@ -370,6 +373,7 @@ void RRTStar::SampleConfiguration(State& sample_state, State& goal_state, bool& 
     {
         sampler.SampleCW(sample_state);
     }
+    sampled_states.push_back(sample_state);
     
 }
 

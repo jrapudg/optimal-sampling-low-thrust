@@ -75,6 +75,14 @@ Visualization Manager:
         agent: true
       Queue Size: 100
       Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /sampled_state_visualization
+      Name: Marker
+      Namespaces:
+        sampled_points: true
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -103,7 +111,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 10.24671745300293
+      Distance: 38.852272033691406
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -119,9 +127,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.45479774475097656
+      Pitch: 0.6247975826263428
       Target Frame: <Fixed Frame>
-      Yaw: 1.760408878326416
+      Yaw: 1.9954086542129517
     Saved: ~
 Window Geometry:
   Displays:
