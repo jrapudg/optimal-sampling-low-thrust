@@ -80,7 +80,15 @@ Visualization Manager:
       Marker Topic: /sampled_state_visualization
       Name: Marker
       Namespaces:
-        sampled_points: true
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /path_points_visualization
+      Name: MarkerArray
+      Namespaces:
+        {}
       Queue Size: 100
       Value: true
   Enabled: true

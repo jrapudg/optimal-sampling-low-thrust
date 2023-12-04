@@ -105,6 +105,62 @@ visualization_msgs::Marker visualize_path_msg(std::vector<State> path, std::stri
 
 }
 
+visualization_msgs::MarkerArray visualize_path_points_msg(std::vector<State> path, std::string local_frame="map")
+{
+    visualization_msgs::MarkerArray ma;
+    int marker_idx = 0;
+    for(auto node : path)
+    {
+        visualization_msgs::Marker m;
+        m.header.frame_id = local_frame;
+        m.header.stamp = ros::Time();
+        m.ns = "path_points";
+        m.id = marker_idx;
+        m.type = visualization_msgs::Marker::ARROW;
+        m.action = visualization_msgs::Marker::ADD;
+        m.pose.position.x = node[0];
+        m.pose.position.y = node[1];
+        m.pose.position.z = node[2];
+        m.scale.x = 0.5;
+        m.scale.y = 0.1;
+        m.scale.z = 0.1;
+        m.color.a = 1.0;
+        m.color.g = 1.0;
+
+        double vec_mag = std::sqrt(std::pow(node[3],2) + std::pow(node[4],2) + std::pow(node[5],2));
+
+        double roll, pitch, yaw;
+        if(vec_mag != 0)
+        {
+            double norm_vel_x = node[3] / vec_mag;
+            double norm_vel_y = node[4] / vec_mag;
+            double norm_vel_z = node[5] / vec_mag;
+
+            yaw = std::atan2(norm_vel_x, norm_vel_z);
+            pitch = std::atan2(norm_vel_y, norm_vel_z);
+            roll = std::asin(norm_vel_x);
+        }
+        else
+        {
+            roll = 0.0;
+            pitch = 0.0;
+            yaw = 0.0;
+        }
+        
+        tf::Quaternion orientation;
+        orientation.setRPY(roll, pitch, yaw);
+        
+        m.pose.orientation.x = orientation.x();
+        m.pose.orientation.y = orientation.y();
+        m.pose.orientation.z = orientation.z();
+        m.pose.orientation.w = orientation.w();
+
+        ma.markers.push_back(m);
+        marker_idx += 1;
+    }
+    return ma;
+}
+
 visualization_msgs::Marker visualize_agent_msg(State state, std::string local_frame="map")
 {
     visualization_msgs::Marker m;
@@ -201,6 +257,7 @@ public:
     ros::Publisher path_viz_pub;
     ros::Publisher agent_viz_pub;
     ros::Publisher sampled_state_pub;
+    ros::Publisher path_points_viz_pub;
 
     OrbitalPlannerNode(ros::NodeHandle &nh, double rate)
     : nh(nh), loop_rate(rate)
@@ -209,6 +266,7 @@ public:
         path_viz_pub = nh.advertise<visualization_msgs::Marker>("path_visualization", 10);
         agent_viz_pub = nh.advertise<visualization_msgs::Marker>("agent_visualization", 10);
         sampled_state_pub = nh.advertise<visualization_msgs::Marker>("sampled_state_visualization", 10);
+        path_points_viz_pub = nh.advertise<visualization_msgs::MarkerArray>("path_points_visualization", 10);
 
         ROS_INFO_STREAM("Orbital Planner Initialization Complete!");
     }
@@ -273,6 +331,9 @@ public:
                 //final path visualization
                 visualization_msgs::Marker path_marker = visualize_path_msg(state_path);
                 path_viz_pub.publish(path_marker);
+
+                visualization_msgs::MarkerArray path_points_marker = visualize_path_points_msg(state_path);
+                path_points_viz_pub.publish(path_points_marker);
 
                 //update current waypoint
                 if(waypoint_num < state_path.size())
