@@ -15,7 +15,8 @@ plan(_plan),
 plan_length(_plan_length),
 sim(Simulator(NonlinearRelativeKeplerianDynamics, SIM_DT)),
 Q(Eigen::MatrixXd::Identity(6, 6)),
-R(Eigen::MatrixXd::Identity(3, 3)),
+//R(Eigen::MatrixXd::Identity(3, 3)),
+R(Eigen::MatrixXd::Identity(3, 3)*10),
 lqr(LQR(Q,R))
 {
     std::cout << "Status query" << std::endl;
@@ -165,12 +166,12 @@ bool NoFlyZone(State &state)
 //this function defines the area of a static
 bool Asteriod(State &state)
 {
-    double radius = 2;
+    double radius = 7;
 
     //this is the center of the asteriod
-    double asteriod_x = -3;
-    double asteriod_y = 2.5;
-    double asteriod_z = 2;
+    double asteriod_x = -5;
+    double asteriod_y = 10;
+    double asteriod_z = 20;
 
     double x = state[0];
     double y = state[1];

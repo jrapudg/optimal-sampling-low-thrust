@@ -10,7 +10,7 @@ using Interpolations #used to create the spline for the reference trajectory
 nx = 6
 
 #path of the data. //change for your path
-data_path = "/home/fausto/optimal-sampling-low-thrust/orbital_planner/src/rrt_star/Output.txt"
+data_path = "/home/fausto/optimal-sampling-low-thrust/orbital_planner/src/rrt_star/Output_R100_med.txt"
 
 reference_traj = readdlm(data_path, ',')
 
@@ -60,8 +60,8 @@ z_range = [2, 3]
 
 
 #Define the asteriod center and radius
-asteroid_center = [-3, 2.5, 2]
-asteroid_radius = 2
+asteroid_center = [-5, 10, 20]
+asteroid_radius = 7
 
 
 # Create a 3D plot
@@ -174,6 +174,6 @@ function plot_sphere_traj(reference_traj, asteriod_center, asteriod_radius)
 end
 
 #Plot a static sphere obstacle in the relative frame along with the trajectory from the planner
-#plot_sphere_traj(reference_traj, asteroid_center, asteroid_radius)
+plot_sphere_traj(reference_traj, asteroid_center, asteroid_radius)
 
-plot_noflyzone_traj(reference_traj, x_range, y_range, z_range)
+#plot_noflyzone_traj(reference_traj, x_range, y_range, z_range)
