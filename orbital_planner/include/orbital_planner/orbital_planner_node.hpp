@@ -249,7 +249,7 @@ visualization_msgs::Marker visualize_earth_msg(std::vector<double> pose, std::st
     visualization_msgs::Marker m;
     m.header.frame_id = local_frame;
     m.header.stamp = ros::Time();
-    m.ns = "agent";
+    m.ns = "earth";
     m.id = 0;
     m.type = visualization_msgs::Marker::MESH_RESOURCE;
     m.action = visualization_msgs::Marker::ADD;
@@ -273,6 +273,43 @@ visualization_msgs::Marker visualize_earth_msg(std::vector<double> pose, std::st
     return m;
 }
 
+visualization_msgs::MarkerArray visualize_asteriods(std::vector<std::vector<double>> poses, std::string local_frame="map")
+{
+    visualization_msgs::MarkerArray ma;
+    int marker_idx = 0;
+    for(auto pose : poses)
+    {
+        visualization_msgs::Marker m;
+        m.header.frame_id = local_frame;
+        m.header.stamp = ros::Time();
+        m.ns = "asteriod";
+        m.id = marker_idx;
+        m.type = visualization_msgs::Marker::MESH_RESOURCE;
+        m.action = visualization_msgs::Marker::ADD;
+        m.mesh_resource = "package://orbital_planner/config/asteroid.stl";
+        m.pose.position.x = pose[0];
+        m.pose.position.y = pose[1];
+        m.pose.position.z = pose[2];
+        m.pose.orientation.x = 0.0;
+        m.pose.orientation.y = 0.0;
+        m.pose.orientation.z = 0.0;
+        m.pose.orientation.w = 1.0;
+        // m.mesh_use_embedded_materials = true;
+        m.scale.x = 3.0;
+        m.scale.y = 3.0;
+        m.scale.z = 3.0;
+        m.color.a = 1.0;
+        m.color.r = 0.6980;
+        m.color.g = 0.7450;
+        m.color.b = 0.7098;
+
+        ma.markers.push_back(m);
+        marker_idx += 1;
+    }
+
+    return ma;
+}
+
 class OrbitalPlannerNode
 {
 //everything public for now
@@ -288,6 +325,7 @@ public:
     ros::Publisher sampled_state_pub;
     ros::Publisher path_points_viz_pub;
     ros::Publisher earth_viz_pub;
+    ros::Publisher asteriod_viz_pub;
 
     OrbitalPlannerNode(ros::NodeHandle &nh, double rate)
     : nh(nh), loop_rate(rate)
@@ -298,6 +336,7 @@ public:
         earth_viz_pub = nh.advertise<visualization_msgs::Marker>("earth_visualization", 10);
         sampled_state_pub = nh.advertise<visualization_msgs::Marker>("sampled_state_visualization", 10);
         path_points_viz_pub = nh.advertise<visualization_msgs::MarkerArray>("path_points_visualization", 10);
+        asteriod_viz_pub = nh.advertise<visualization_msgs::MarkerArray>("asteriod_visualization", 10);
 
         ROS_INFO_STREAM("Orbital Planner Initialization Complete!");
     }
@@ -347,9 +386,14 @@ public:
             //visualize earth model
             earth_viz_pub.publish(visualize_earth_msg({50.0, 0.0, 5.0}));
 
+            //visualize asteriod model
+            std::vector<std::vector<double>> asteriod_poses;
+            asteriod_poses.push_back({5.0, 5.0, 5.0});
+            asteriod_viz_pub.publish(visualize_asteriods(asteriod_poses));
+
             //visualize sampled states
-            // std::vector<State> sampled_states = planner.GetSampledStates();
-            // sampled_state_pub.publish(m);
+            std::vector<State> sampled_states = planner.GetSampledStates();
+            sampled_state_pub.publish(visualize_sampled_states_msg(sampled_states));
 
             //main planning loop
             if(!planner.PathFound() && i < RRT_STAR_NUM_ITER)

@@ -96,7 +96,15 @@ Visualization Manager:
       Marker Topic: /earth_visualization
       Name: Marker
       Namespaces:
-        agent: true
+        earth: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /asteriod_visualization
+      Name: MarkerArray
+      Namespaces:
+        {}
       Queue Size: 100
       Value: true
   Enabled: true
