@@ -9,9 +9,9 @@ using Interpolations #used to create the spline for the reference trajectory
 #number of states
 nx = 6
 
-#path of the data. //change for your path
+#path of the data. //change for your path. These were the txt files used for the presentation
 data_path_R1 = "/home/fausto/optimal-sampling-low-thrust/orbital_planner/src/rrt_star/Output_R1_med.txt"
-data_path_R10 = "/home/fausto/optimal-sampling-low-thrust/orbital_planner/src/rrt_star/Output_R10_med.txt"
+data_path_R10 = "/home/fausto/optimal-sampling-low-thrust/orbital_planner/src/rrt_star/Output_R10_med_new.txt"
 data_path_R100 = "/home/fausto/optimal-sampling-low-thrust/orbital_planner/src/rrt_star/Output_R100_med.txt"
 
 reference_traj_R1 = readdlm(data_path_R1, ',')

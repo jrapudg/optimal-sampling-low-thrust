@@ -28,7 +28,12 @@ nx = 6
 u0 = [0,0,0]
 
 #path of the data. //change for your path
-data_path = "/home/fausto/optimal-sampling-low-thrust/orbital_planner/src/rrt_star/Output.txt"
+#R=1 path
+#data_path = "/home/fausto/optimal-sampling-low-thrust/orbital_planner/src/rrt_star/Output_R1_med.txt"
+#R=10 path
+#data_path = "/home/fausto/optimal-sampling-low-thrust/orbital_planner/src/rrt_star/Output_R10_med_new.txt"
+#R=100 path
+data_path = "/home/fausto/optimal-sampling-low-thrust/orbital_planner/src/rrt_star/Output_R100_med.txt"
 
 reference_traj = readdlm(data_path, ',')
 
@@ -73,6 +78,7 @@ end
 function run_lqr_twostates(initial_state, k)
 
     traj = zeros((6,10))
+    controls= zeros((3,10))
     #testing with just one point
     #initial_state = reference_traj[k,:]
     next_state = reference_traj[k+1,:]
@@ -93,6 +99,12 @@ function run_lqr_twostates(initial_state, k)
 
     #tuning these for the tracking controller
     #works with 1e4
+
+
+    #working with good argument
+    #Q = 10*Matrix(I,Nx,Nx)
+    #R = 10*Matrix(I,Nu,Nu)
+
     Q = 1e5*Matrix(I,Nx,Nx)
     R = 1*Matrix(I,Nu,Nu)
 
@@ -115,6 +127,8 @@ function run_lqr_twostates(initial_state, k)
     #initial control law
     u = -K*(initial_state_f - next_state_f)
 
+    controls[:,1] = u
+
     #println("THIS IS initial u: ", u)
 
     for k in 1:iters-1
@@ -125,6 +139,7 @@ function run_lqr_twostates(initial_state, k)
         #updated control law since we update our position
 
         u = -K*(traj[:,k+1] - next_state_f)
+        controls[:,k+1] = u
 
         #println("THIS IS U: ", u)
 
@@ -132,11 +147,11 @@ function run_lqr_twostates(initial_state, k)
 
         if norm(traj[:,k]- next_state_f) < 0.15
             #print("REACHED THE STATE")
-            return traj, next_state_f
+            return traj, next_state_f, controls
         end
     end
 
-    return traj, next_state_f
+    return traj, next_state_f, controls
 
 end
 
@@ -147,13 +162,14 @@ initial_state_f::Vector{Float64} = map(x -> float(x), initial_state)
 #traj, next_state_f = run_lqr_twostates(initial_state, 1)
 
 all_traj = []
+all_controls = []
 
 #append!(all_traj, ones(6))
 
 for k in 1:size(reference_traj)[1]-1
 #for k in 1:5
 
-    traj, next_state_f = run_lqr_twostates(initial_state_f, k)
+    traj, next_state_f, controls = run_lqr_twostates(initial_state_f, k)
 
     for i in 1:size(traj)[2]
         if sum(traj[:,i]) == 0
@@ -163,18 +179,67 @@ for k in 1:size(reference_traj)[1]-1
 
     end
 
+    for j in 1:size(controls)[2]
+        if sum(controls[:,j]) == 0
+            break
+        end
+        append!(all_controls, controls[:,j])
+
+    end
+
     initial_state_f = all_traj[end-5:end] 
 
     #println("this is initial state: ", initial_state_f)
 
 end
 
+
 #the all traj, reshape
 all_traj = reshape(all_traj, (6, size(all_traj)[1] ÷ 6))
+
+#the all controls, reshape
+all_controls = reshape(all_controls, (3, size(all_controls)[1] ÷ 3))
+
 ref = PlotlyJS.scatter3d(x=reference_traj[:,1], y=reference_traj[:,2], z=reference_traj[:,3], mode="lines", name="Reference Planner Trajectory", line=attr(width=5))
 lqr_traj = PlotlyJS.scatter3d(x=all_traj[1,:], y=all_traj[2,:], z=all_traj[3,:], mode="lines", name="TVLQR Trajectory", line=attr(width=5))
 layout = Layout(title="LQR Trajectory", xaxis_title="X", yaxis_title="Y", zaxis_title="Z", legend=true)
 PlotlyJS.plot([lqr_traj, ref], layout)
+
+all_controls
+#sum of the controls
+sum_controls = sum(abs.(all_controls), dims=1)
+
+#save sum_controls to a txt file. 
+writedlm("sum_controls_R100.txt", sum_controls, ',')
+
+
+#total fuel
+total_fuel = sum(sum_controls)
+
+
+sum_controls_R1 = sum_controls
+
+
+#read the txt file and save into Matrix
+sum_controls_R1 = readdlm("sum_controls_R1.txt", ',')
+sum_controls_R10 = readdlm("sum_controls_R10.txt", ',')
+sum_controls_R100 = readdlm("sum_controls_R100.txt", ',')
+
+#plot the sum controls of all the R's saved in the text files
+sum_controls_R1 = PlotlyJS.scatter(x=1:size(sum_controls_R1)[2], y=sum_controls_R1[1,:], mode="lines", name="Control R1", line=attr(width=5), color="blue")
+sum_controls_R10 = PlotlyJS.scatter(x=1:size(sum_controls_R10)[2], y=sum_controls_R10[1,:], mode="lines", name="Control R10", line=attr(width=5), color="red")
+sum_controls_R100 = PlotlyJS.scatter(x=1:size(sum_controls_R100)[2], y=sum_controls_R100[1,:], mode="lines", name="Control R100", line=attr(width=5), color="green")
+
+layout = Layout(title="Sum of Controls", xaxis_title="Time", yaxis_title="Control Magnitude per Timestep", legend=true)
+PlotlyJS.plot([sum_controls_R1, sum_controls_R10, sum_controls_R100], layout)
+
+
+# all_controls_x = PlotlyJS.scatter(x=1:size(all_controls)[2], y=all_controls[1,:], mode="lines", name="Control X", line=attr(width=5), color="blue")
+# all_controls_y = PlotlyJS.scatter(x=1:size(all_controls)[2], y=all_controls[2,:], mode="lines", name="Control Y", line=attr(width=5), color="red")
+# all_controls_z = PlotlyJS.scatter(x=1:size(all_controls)[2], y=all_controls[3,:], mode="lines", name="Control Z", line=attr(width=5), color="green")
+
+# layout = Layout(title="Controls", xaxis_title="Time", yaxis_title="Control Magnitude per Timestep", legend=true)
+# PlotlyJS.plot([all_controls_x, all_controls_y, all_controls_z], layout)
 
 #tests two subsequent states
 #using PlotlyJS
