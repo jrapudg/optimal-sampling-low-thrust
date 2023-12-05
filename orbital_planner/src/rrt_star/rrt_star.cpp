@@ -16,7 +16,7 @@ plan_length(_plan_length),
 sim(Simulator(NonlinearRelativeKeplerianDynamics, SIM_DT)),
 Q(Eigen::MatrixXd::Identity(6, 6)),
 //R(Eigen::MatrixXd::Identity(3, 3)),
-R(Eigen::MatrixXd::Identity(3, 3)*10),
+R(Eigen::MatrixXd::Identity(3, 3)),
 lqr(LQR(Q,R))
 {
     std::cout << "Status query" << std::endl;

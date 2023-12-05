@@ -10,12 +10,24 @@ using Interpolations #used to create the spline for the reference trajectory
 nx = 6
 
 #path of the data. //change for your path
-data_path = "/home/fausto/optimal-sampling-low-thrust/orbital_planner/src/rrt_star/Output_R100_med.txt"
+data_path_R1 = "/home/fausto/optimal-sampling-low-thrust/orbital_planner/src/rrt_star/Output_R1_med.txt"
+data_path_R10 = "/home/fausto/optimal-sampling-low-thrust/orbital_planner/src/rrt_star/Output_R10_med.txt"
+data_path_R100 = "/home/fausto/optimal-sampling-low-thrust/orbital_planner/src/rrt_star/Output_R100_med.txt"
 
-reference_traj = readdlm(data_path, ',')
+reference_traj_R1 = readdlm(data_path_R1, ',')
 
 #truncate in case the file has extra lines
-reference_traj = reference_traj[:,1:nx]
+reference_traj_R1 = reference_traj_R1[:,1:nx]
+
+reference_traj_R10 = readdlm(data_path_R10, ',')
+
+#truncate in case the file has extra lines
+reference_traj_R10 = reference_traj_R10[:,1:nx]
+
+reference_traj_R100 = readdlm(data_path_R100, ',')
+
+#truncate in case the file has extra lines
+reference_traj_R100 = reference_traj_R100[:,1:nx]
 
 #assume that dt between each point is 1 second
 #dt = 1
@@ -150,9 +162,12 @@ end
 
 
 
-function plot_sphere_traj(reference_traj, asteriod_center, asteriod_radius)
+function plot_sphere_traj(reference_traj_r1, reference_traj_r10, reference_traj_r100, asteriod_center, asteriod_radius)
 
-      ref = PlotlyJS.scatter3d(x=reference_traj[:,1], y=reference_traj[:,2], z=reference_traj[:,3], mode="lines", name="Spacecraft Trajectory", line=attr(width=5))
+      ref_r1 = PlotlyJS.scatter3d(x=reference_traj_r1[:,1], y=reference_traj_r1[:,2], z=reference_traj_r1[:,3], mode="lines", name="Spacecraft Trajectory R=1", line=attr(width=5))
+      ref_r10 = PlotlyJS.scatter3d(x=reference_traj_r10[:,1], y=reference_traj_r10[:,2], z=reference_traj_r10[:,3], mode="lines", name="Spacecraft Trajectory R=10", line=attr(width=5))
+      ref_r100 = PlotlyJS.scatter3d(x=reference_traj_r100[:,1], y=reference_traj_r100[:,2], z=reference_traj_r100[:,3], mode="lines", name="Spacecraft Trajectory R=100", line=attr(width=5))
+
       n = 100
       u = range(-pi, pi; length=n)
       v = range(0, pi; length=n)
@@ -167,13 +182,15 @@ function plot_sphere_traj(reference_traj, asteriod_center, asteriod_radius)
 
       earth = PlotlyJS.surface(z = z, x = x, y= y, showscale=false, surfacecolor="black", name="Asteriod")
 
-      layout = Layout(title="Planned Trajectory", xaxis_title="X", yaxis_title="Y", zaxis_title="Z", legend=true)
+      layout = Layout(title="Planned Trajectory with Varying R", xaxis_title="X", yaxis_title="Y", zaxis_title="Z", legend=true)
 
-      PlotlyJS.plot([ref, earth, initial, final], layout)
+      PlotlyJS.plot([ref_r1, ref_r10, ref_r100, earth, initial, final], layout)
 
 end
 
 #Plot a static sphere obstacle in the relative frame along with the trajectory from the planner
-plot_sphere_traj(reference_traj, asteroid_center, asteroid_radius)
+#plot_sphere_traj(reference_traj, asteroid_center, asteroid_radius)
 
+
+plot_sphere_traj(reference_traj_R1, reference_traj_R10, reference_traj_R100, asteroid_center, asteroid_radius)
 #plot_noflyzone_traj(reference_traj, x_range, y_range, z_range)
