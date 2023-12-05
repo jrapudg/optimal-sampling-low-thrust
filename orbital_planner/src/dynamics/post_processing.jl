@@ -2,6 +2,7 @@ using ControlSystems
 using ForwardDiff
 using DelimitedFiles
 using LinearAlgebra
+using PlotlyJS
 
 earth = (
     μ = 3.986004418e14,
