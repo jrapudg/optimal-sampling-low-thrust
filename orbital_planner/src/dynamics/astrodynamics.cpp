@@ -63,7 +63,6 @@ Vector toEigen(std::vector<double> v)
 }
 
 
-
 OrbitalSampler::OrbitalSampler(int seed)
 {
     // From hardware

@@ -130,6 +130,9 @@ double RRTStar::ComputePath(std::vector<State>& state_path)
 }
 
 //this function defines a region in the state space that is a no fly zone
+
+//update the isvalid config function depending on the obstacle you plan on using
+
 bool NoFlyZone(State &state)
 {
     // double no_fly_x_min = -5; 
@@ -158,6 +161,35 @@ bool NoFlyZone(State &state)
 
 
 }   
+
+//this function defines the area of a static
+bool Asteriod(State &state)
+{
+    double radius = 2;
+
+    //this is the center of the asteriod
+    double asteriod_x = -3;
+    double asteriod_y = 2.5;
+    double asteriod_z = 2;
+
+    double x = state[0];
+    double y = state[1];
+    double z = state[2];
+
+    double distance = sqrt(pow(x - asteriod_x, 2) + pow(y - asteriod_y, 2) + pow(z - asteriod_z, 2));
+
+    //it is invalid if it is inside the radius of the asteriod
+    if (distance <= radius)
+    {
+        return false;
+    }
+    else
+    {
+        return true;
+    }
+
+}
+
 
 
 void RRTStar::Iterate()
@@ -385,7 +417,11 @@ void RRTStar::AddToTree(Tree& tree, std::shared_ptr<Graph_Node> state_node, std:
 // Check if the state is valid
 bool RRTStar::ValidState(State& state){
 
-    bool valid_state = NoFlyZone(state);
+    //constant rectangular no fly zone
+    //bool valid_state = NoFlyZone(state);
+
+    //static asteriod in the relative frame
+    bool valid_state = Asteriod(state); 
 
     return valid_state;
 }
