@@ -244,6 +244,35 @@ visualization_msgs::Marker visualize_sampled_states_msg(std::vector<State> sampl
     return m;
 }
 
+visualization_msgs::Marker visualize_earth_msg(std::vector<double> pose, std::string local_frame="map")
+{
+    visualization_msgs::Marker m;
+    m.header.frame_id = local_frame;
+    m.header.stamp = ros::Time();
+    m.ns = "agent";
+    m.id = 0;
+    m.type = visualization_msgs::Marker::MESH_RESOURCE;
+    m.action = visualization_msgs::Marker::ADD;
+    m.mesh_resource = "package://orbital_planner/config/earth.dae";
+    m.mesh_use_embedded_materials = true;
+    m.pose.position.x = pose[0];
+    m.pose.position.y = pose[1];
+    m.pose.position.z = pose[2];
+
+    tf::Quaternion orientation;
+    orientation.setRPY(0.0, 0.0, -M_PI/2.0);
+
+    m.pose.orientation.x = orientation.x();
+    m.pose.orientation.y = orientation.y();
+    m.pose.orientation.z = orientation.z();
+    m.pose.orientation.w = orientation.w();
+    m.scale.x = 0.1;
+    m.scale.y = 0.1;
+    m.scale.z = 0.1;
+    m.color.a = 1.0;
+    return m;
+}
+
 class OrbitalPlannerNode
 {
 //everything public for now
@@ -258,6 +287,7 @@ public:
     ros::Publisher agent_viz_pub;
     ros::Publisher sampled_state_pub;
     ros::Publisher path_points_viz_pub;
+    ros::Publisher earth_viz_pub;
 
     OrbitalPlannerNode(ros::NodeHandle &nh, double rate)
     : nh(nh), loop_rate(rate)
@@ -265,6 +295,7 @@ public:
         tree_viz_pub = nh.advertise<visualization_msgs::Marker>("tree_visualization", 10);
         path_viz_pub = nh.advertise<visualization_msgs::Marker>("path_visualization", 10);
         agent_viz_pub = nh.advertise<visualization_msgs::Marker>("agent_visualization", 10);
+        earth_viz_pub = nh.advertise<visualization_msgs::Marker>("earth_visualization", 10);
         sampled_state_pub = nh.advertise<visualization_msgs::Marker>("sampled_state_visualization", 10);
         path_points_viz_pub = nh.advertise<visualization_msgs::MarkerArray>("path_points_visualization", 10);
 
@@ -313,6 +344,9 @@ public:
             visualization_msgs::Marker agent_marker = visualize_agent_msg(curr_state);
             agent_viz_pub.publish(agent_marker);
 
+            //visualize earth model
+            earth_viz_pub.publish(visualize_earth_msg({50.0, 0.0, 5.0}));
+
             //visualize sampled states
             // std::vector<State> sampled_states = planner.GetSampledStates();
             // sampled_state_pub.publish(m);
@@ -345,11 +379,6 @@ public:
 
                 if(!print_path_info)
                 {
-                    for (auto state : state_path)
-                    {
-                        Print(state, "here we go");
-                    }
-
                     std::cout << "Finished planning with " << i + 1 << " samples!" << std::endl;
                     std::cout << "Quadratic State Cost " << cost << std::endl;
                     std::cout << "PATH SIZE: " << plan_length << std::endl;
