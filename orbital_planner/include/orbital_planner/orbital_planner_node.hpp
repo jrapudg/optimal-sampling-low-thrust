@@ -18,6 +18,36 @@ State convertArrayToState(const double* array) {
     return state;
 }
 
+tf2::Quaternion convert_vel_to_quat(double vel_x, double vel_y, double vel_z)
+{
+    double vec_mag = std::sqrt(std::pow(vel_x,2) + std::pow(vel_y,2) + std::pow(vel_z,2));
+    tf2::Quaternion orientation;
+
+    if(vec_mag == 0.0)
+    {
+        
+        orientation.setRPY(0.0, 0.0, 0.0);
+    }
+    else
+    {
+        geometry_msgs::Vector3 velocity_vector;
+        velocity_vector.x = vel_x / vec_mag;
+        velocity_vector.y = vel_y / vec_mag;
+        velocity_vector.z = vel_z / vec_mag;
+
+        geometry_msgs::Vector3 reference_vector;
+        reference_vector.x = 0.0;
+        reference_vector.y = 0.0;
+        reference_vector.z = 1.0;
+
+        tf2::Vector3 rotation_axis(velocity_vector.y, -velocity_vector.x, 0);
+        double rotation_angle = std::acos(velocity_vector.z);
+        
+        orientation.setRotation(rotation_axis, rotation_angle);
+    }
+    return orientation;
+}
+
 visualization_msgs::Marker visualize_tree_msg(const Tree* tree, std::string local_frame="map")
 {
     visualization_msgs::Marker m;
@@ -124,32 +154,10 @@ visualization_msgs::MarkerArray visualize_path_points_msg(std::vector<State> pat
         m.scale.x = 0.5;
         m.scale.y = 0.1;
         m.scale.z = 0.1;
-        m.color.a = 1.0;
+        m.color.a = 0.75;
         m.color.g = 1.0;
 
-        double vec_mag = std::sqrt(std::pow(node[3],2) + std::pow(node[4],2) + std::pow(node[5],2));
-
-        double roll, pitch, yaw;
-        if(vec_mag != 0)
-        {
-            double norm_vel_x = node[3] / vec_mag;
-            double norm_vel_y = node[4] / vec_mag;
-            double norm_vel_z = node[5] / vec_mag;
-
-            yaw = std::atan2(norm_vel_x, norm_vel_z);
-            pitch = std::atan2(norm_vel_y, norm_vel_z);
-            roll = std::asin(norm_vel_x);
-        }
-        else
-        {
-            roll = 0.0;
-            pitch = 0.0;
-            yaw = 0.0;
-        }
-        
-        tf::Quaternion orientation;
-        orientation.setRPY(roll, pitch, yaw);
-        
+        tf2::Quaternion orientation = convert_vel_to_quat(node[3], node[4], node[5]);
         m.pose.orientation.x = orientation.x();
         m.pose.orientation.y = orientation.y();
         m.pose.orientation.z = orientation.z();
@@ -171,31 +179,8 @@ visualization_msgs::Marker visualize_agent_msg(State state, std::string local_fr
     m.type = visualization_msgs::Marker::MESH_RESOURCE;
     m.action = visualization_msgs::Marker::ADD;
     m.mesh_resource = "package://orbital_planner/config/dragon_centered.stl";
-    // m.mesh_use_embedded_materials = true;
-
-    double vec_mag = std::sqrt(std::pow(state[3],2) + std::pow(state[4],2) + std::pow(state[5],2));
-
-    double roll, pitch, yaw;
-    if(vec_mag != 0)
-    {
-        double norm_vel_x = state[3] / vec_mag;
-        double norm_vel_y = state[4] / vec_mag;
-        double norm_vel_z = state[5] / vec_mag;
-
-        yaw = std::atan2(norm_vel_x, norm_vel_z);
-        pitch = std::atan2(norm_vel_y, norm_vel_z);
-        roll = std::asin(norm_vel_x);
-    }
-    else
-    {
-        roll = 0.0;
-        pitch = 0.0;
-        yaw = 0.0;
-    }
     
-    tf::Quaternion orientation;
-    orientation.setRPY(roll, pitch, yaw);
-
+    tf2::Quaternion orientation = convert_vel_to_quat(state[3], state[4], state[5]);
     m.pose.position.x = state[0];
     m.pose.position.y = state[1];
     m.pose.position.z = state[2];
@@ -310,6 +295,36 @@ visualization_msgs::MarkerArray visualize_asteriods(std::vector<std::vector<doub
     return ma;
 }
 
+visualization_msgs::Marker visualize_goal_pose(State state, std::string local_frame="map")
+{
+    visualization_msgs::Marker m;
+    m.header.frame_id = local_frame;
+    m.header.stamp = ros::Time();
+    m.ns = "agent";
+    m.id = 0;
+    m.type = visualization_msgs::Marker::ARROW;
+    m.action = visualization_msgs::Marker::ADD;
+    m.mesh_resource = "package://orbital_planner/config/dragon_centered.stl";
+    
+    tf2::Quaternion orientation = convert_vel_to_quat(state[3], state[4], state[5]);
+    m.pose.position.x = state[0];
+    m.pose.position.y = state[1];
+    m.pose.position.z = state[2];
+    m.pose.orientation.x = orientation.x();
+    m.pose.orientation.y = orientation.y();
+    m.pose.orientation.z = orientation.z();
+    m.pose.orientation.w = orientation.w();
+    m.scale.x = 1.0;
+    m.scale.y = 0.2;
+    m.scale.z = 0.2;
+    // Set the color (RGBA values)
+    m.color.r = 0.0;
+    m.color.g = 1.0;
+    m.color.b = 0.0;
+    m.color.a = 1.0;
+    return m;
+}
+
 class OrbitalPlannerNode
 {
 //everything public for now
@@ -326,6 +341,7 @@ public:
     ros::Publisher path_points_viz_pub;
     ros::Publisher earth_viz_pub;
     ros::Publisher asteriod_viz_pub;
+    ros::Publisher goal_viz_pub;
 
     OrbitalPlannerNode(ros::NodeHandle &nh, double rate)
     : nh(nh), loop_rate(rate)
@@ -334,6 +350,7 @@ public:
         path_viz_pub = nh.advertise<visualization_msgs::Marker>("path_visualization", 10);
         agent_viz_pub = nh.advertise<visualization_msgs::Marker>("agent_visualization", 10);
         earth_viz_pub = nh.advertise<visualization_msgs::Marker>("earth_visualization", 10);
+        goal_viz_pub = nh.advertise<visualization_msgs::Marker>("goal_visualization", 10);
         sampled_state_pub = nh.advertise<visualization_msgs::Marker>("sampled_state_visualization", 10);
         path_points_viz_pub = nh.advertise<visualization_msgs::MarkerArray>("path_points_visualization", 10);
         asteriod_viz_pub = nh.advertise<visualization_msgs::MarkerArray>("asteriod_visualization", 10);
@@ -374,6 +391,10 @@ public:
 
         while(ros::ok())
         {
+            //visualize goal pose
+            visualization_msgs::Marker goal_pose_marker = visualize_goal_pose(goal_state);
+            goal_viz_pub.publish(goal_pose_marker);
+
             //visualize tree
             const Tree* tree = planner.GetTree();
             visualization_msgs::Marker tree_marker = visualize_tree_msg(tree);
@@ -384,7 +405,7 @@ public:
             agent_viz_pub.publish(agent_marker);
 
             //visualize earth model
-            earth_viz_pub.publish(visualize_earth_msg({50.0, 0.0, 5.0}));
+            earth_viz_pub.publish(visualize_earth_msg({50.0, -10.0, 5.0}));
 
             //visualize asteriod model
             std::vector<std::vector<double>> asteriod_poses;
@@ -419,7 +440,6 @@ public:
                     curr_state = state_path[waypoint_num];
                     waypoint_num += 1;
                 }
-
 
                 if(!print_path_info)
                 {
