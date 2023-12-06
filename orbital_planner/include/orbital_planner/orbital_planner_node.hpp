@@ -332,7 +332,8 @@ public:
     bool begin_planning = false;
 
     // ROS specific things
-    ros::Rate loop_rate;
+    ros::Rate planning_rate;
+    ros::Rate visualization_rate;
     ros::NodeHandle &nh;
     std::string local_frame = "map"; //TODO: need to replace with right frame
 
@@ -346,8 +347,8 @@ public:
     ros::Publisher goal_viz_pub;
     ros::Subscriber start_planner_sub;
 
-    OrbitalPlannerNode(ros::NodeHandle &nh, double rate)
-    : nh(nh), loop_rate(rate)
+    OrbitalPlannerNode(ros::NodeHandle &nh, double rate1, double rate2)
+    : nh(nh), planning_rate(rate1), visualization_rate(rate2)
     {
         start_planner_sub = nh.subscribe<std_msgs::String>("start_planning", 10, &OrbitalPlannerNode::start_planner_callback, this);
         tree_viz_pub = nh.advertise<visualization_msgs::Marker>("tree_visualization", 10);
@@ -437,6 +438,8 @@ public:
                     std::cout << "Iteration " << i << std::endl;
                     planner.Iterate();
                     i++;
+                    planning_rate.sleep();
+
                 }
                 else if(planner.PathFound())
                 {
@@ -468,6 +471,7 @@ public:
                         std::cout << "TIME: " << (double) time_elapsed_milli/1000 << std::endl;
                         print_path_info = true;
                     }
+                    visualization_rate.sleep();
                 }
                 else
                 {
@@ -477,7 +481,7 @@ public:
 
             //loop rate here
             ros::spinOnce();
-            loop_rate.sleep();
+            // visualization_loop_rate.sleep();
 
         }
     }
