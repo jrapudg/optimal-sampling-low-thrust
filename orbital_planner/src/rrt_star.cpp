@@ -15,6 +15,7 @@ plan(_plan),
 plan_length(_plan_length),
 sim(Simulator(NonlinearRelativeKeplerianDynamics, SIM_DT)),
 Q(Eigen::MatrixXd::Identity(6, 6)),
+//R(Eigen::MatrixXd::Identity(3, 3)),
 R(Eigen::MatrixXd::Identity(3, 3)),
 lqr(LQR(Q,R))
 {
@@ -56,7 +57,7 @@ void RRTStar::BacktrackToStart(std::vector<std::shared_ptr<Graph_Node>>& path, s
     path.clear();
     path.push_back(node);
     while(node->parent != start_node){
-        // Print(node->config, "State");
+        Print(node->config, "State");
         node = node->parent;
         //Print(node->config, "Parent");
         path.push_back(node);
@@ -90,7 +91,7 @@ double RRTStar::ComputeQuadraticCost(const std::vector<std::shared_ptr<Graph_Nod
 double RRTStar::ComputePath(std::vector<State>& state_path)
 {
     
-    // std::cout << "Computing path ..." << std::endl;
+    std::cout << "Computing path ..." << std::endl;
 
     // Must check if path if found first 
     if (!PathFound())
@@ -129,6 +130,67 @@ double RRTStar::ComputePath(std::vector<State>& state_path)
     return cost;
 }
 
+//this function defines a region in the state space that is a no fly zone
+
+//update the isvalid config function depending on the obstacle you plan on using
+
+bool NoFlyZone(State &state)
+{
+    // double no_fly_x_min = -5; 
+    // double no_fly_x_max = -4; 
+    // double no_fly_y_min =  2; 
+    // double no_fly_y_max = 2.5; 
+    // double no_fly_z_min = 3; 
+    // double no_fly_z_max = 4;
+
+    double no_fly_x_min = -3; 
+    double no_fly_x_max = -2; 
+    double no_fly_y_min =  2; 
+    double no_fly_y_max = 2.5; 
+    double no_fly_z_min = 2; 
+    double no_fly_z_max = 3; 
+
+    if (state[0] >= no_fly_x_min && state[0] <= no_fly_x_max && state[1] >= no_fly_y_min && state[1] <= no_fly_y_max && state[2] >= no_fly_z_min && state[2] <= no_fly_z_max)
+    {
+        //it is an invalid
+        return false; 
+    }
+    else
+    {
+        return true; 
+    }
+
+
+}   
+
+//this function defines the area of a static
+bool Asteriod(State &state)
+{
+    double radius = 7;
+
+    //this is the center of the asteriod
+    double asteriod_x = -5;
+    double asteriod_y = 10;
+    double asteriod_z = 20;
+
+    double x = state[0];
+    double y = state[1];
+    double z = state[2];
+
+    double distance = sqrt(pow(x - asteriod_x, 2) + pow(y - asteriod_y, 2) + pow(z - asteriod_z, 2));
+
+    //it is invalid if it is inside the radius of the asteriod
+    if (distance <= radius)
+    {
+        return false;
+    }
+    else
+    {
+        return true;
+    }
+
+}
+
 
 
 void RRTStar::Iterate()
@@ -160,9 +222,16 @@ void RRTStar::Iterate()
     //std::cout << "Optimal Gain: " << K << std::endl;
     State new_state;
     Control policy_used;
+    //this steer is just by one timestep currently
     SteerTowards(tree, sampled_state, nearest_node, new_state, policy_used);
     Print(new_state, "After steering");
 
+    //check if the new state is in the no fly zone. if it is, don't add it to the tree...
+    if (!ValidState(new_state))
+    {
+        std::cout << "Invalid state" << std::endl;
+        return;
+    }
 
 
     // Initialize new state as a node
@@ -187,7 +256,7 @@ void RRTStar::Iterate()
 
     // AddToTree
     //std::cout << "AddToTree" << std::endl;
-    AddToTree(tree, new_state_node, parent_node, S);
+    AddToTree(tree, new_state_node, parent_node, S, K);
     Print(parent_node->config, "Parent");
     //std::cout << "Node cost with that parent " << new_state_node->g << std::endl;
     
@@ -205,7 +274,7 @@ void RRTStar::Iterate()
     {
         goal_node = CreateTreeNode(tree, goal_config);
         goal_node->g = 0;
-        AddToTree(tree, goal_node, new_state_node, S);
+        AddToTree(tree, goal_node, new_state_node, S, K);
         path_found = true;
     }
 
@@ -234,6 +303,8 @@ void RRTStar::Reset()
     path_found = false;
     // TODO clear all vectors and stuff
 }
+
+
 
 void RRTStar::UpdateLinearizedDiscreteDynamicsAround(const State& x, const Control& u)
 {
@@ -330,7 +401,7 @@ void RRTStar::Rewire(Tree& tree,
                 Print(near_node->config, "Child near");
             }
 
-
+            std::cout << "REWIRINGGGGGGGGGGGGGGGGGG ..." << std::endl;
             near_node->parent = new_state_node;
             near_node->g = new_state_node->g + config_distance(new_state_node->config, near_node->config, near_node->S);
 
@@ -345,12 +416,20 @@ std::shared_ptr<Graph_Node> RRTStar::CreateTreeNode(Tree& tree, State& state){
     return tree.add_vertex(state);
 };
 
-void RRTStar::AddToTree(Tree& tree, std::shared_ptr<Graph_Node> state_node, std::shared_ptr<Graph_Node> parent_state_node, MatrixS& S){
-    tree.add_edge(state_node, parent_state_node, S);
+void RRTStar::AddToTree(Tree& tree, std::shared_ptr<Graph_Node> state_node, std::shared_ptr<Graph_Node> parent_state_node, MatrixS& S, MatrixK& K){
+    tree.add_edge(state_node, parent_state_node, S, K);
 };
 
+// Check if the state is valid
 bool RRTStar::ValidState(State& state){
-    return true;
+
+    //constant rectangular no fly zone
+    //bool valid_state = NoFlyZone(state);
+
+    //static asteriod in the relative frame
+    bool valid_state = Asteriod(state); 
+
+    return valid_state;
 }
 
 std::shared_ptr<Graph_Node> RRTStar::FindNearestStateTo(Tree& tree, State& state, MatrixS& S){

@@ -218,9 +218,9 @@ visualization_msgs::Marker visualize_sampled_states_msg(std::vector<State> sampl
         m.points.push_back(point);
     }
 
-    m.scale.x = 0.1;
-    m.scale.y = 0.1;
-    m.scale.z = 0.1;
+    m.scale.x = 0.15;
+    m.scale.y = 0.15;
+    m.scale.z = 0.15;
     m.color.a = 1.0;
     m.color.r = 0.0;
     m.color.g = 0.0;
@@ -280,9 +280,9 @@ visualization_msgs::MarkerArray visualize_asteriods(std::vector<std::vector<doub
         m.pose.orientation.z = 0.0;
         m.pose.orientation.w = 1.0;
         // m.mesh_use_embedded_materials = true;
-        m.scale.x = 3.0;
-        m.scale.y = 3.0;
-        m.scale.z = 3.0;
+        m.scale.x = 7.0;
+        m.scale.y = 7.0;
+        m.scale.z = 7.0;
         m.color.a = 1.0;
         m.color.r = 0.6980;
         m.color.g = 0.7450;
@@ -329,6 +329,8 @@ class OrbitalPlannerNode
 {
 //everything public for now
 public:
+    bool begin_planning = false;
+
     // ROS specific things
     ros::Rate loop_rate;
     ros::NodeHandle &nh;
@@ -342,10 +344,12 @@ public:
     ros::Publisher earth_viz_pub;
     ros::Publisher asteriod_viz_pub;
     ros::Publisher goal_viz_pub;
+    ros::Subscriber start_planner_sub;
 
     OrbitalPlannerNode(ros::NodeHandle &nh, double rate)
     : nh(nh), loop_rate(rate)
     {
+        start_planner_sub = nh.subscribe<std_msgs::String>("start_planning", 10, &OrbitalPlannerNode::start_planner_callback, this);
         tree_viz_pub = nh.advertise<visualization_msgs::Marker>("tree_visualization", 10);
         path_viz_pub = nh.advertise<visualization_msgs::Marker>("path_visualization", 10);
         agent_viz_pub = nh.advertise<visualization_msgs::Marker>("agent_visualization", 10);
@@ -358,11 +362,20 @@ public:
         ROS_INFO_STREAM("Orbital Planner Initialization Complete!");
     }
 
+    void start_planner_callback(const std_msgs::String::ConstPtr& msg) 
+    {
+        // Your callback logic here
+        ROS_INFO("Starting planning");
+
+        // Set the boolean variable to true when a message is received
+        begin_planning = true;
+    }
+
     //main planning loop here
     void run()
     {
         // load start and goal state
-        double* start_d = doubleArrayFromString("8,2.4,7.3,-0.2,0.3,-0.2");
+        double* start_d = doubleArrayFromString("-12.306,24.39,34.307,0.01,0.02,-0.015");
         double* goal_d = doubleArrayFromString("0,0,0,0,0,0");
 
         State start_state = convertArrayToState(start_d);
@@ -409,54 +422,57 @@ public:
 
             //visualize asteriod model
             std::vector<std::vector<double>> asteriod_poses;
-            asteriod_poses.push_back({5.0, 5.0, 5.0});
+            asteriod_poses.push_back({-5, 10, 20});
             asteriod_viz_pub.publish(visualize_asteriods(asteriod_poses));
 
             //visualize sampled states
             std::vector<State> sampled_states = planner.GetSampledStates();
             sampled_state_pub.publish(visualize_sampled_states_msg(sampled_states));
 
-            //main planning loop
-            if(!planner.PathFound() && i < RRT_STAR_NUM_ITER)
+            if(begin_planning)
             {
-                std::cout << "Iteration " << i << std::endl;
-                planner.Iterate();
-                i++;
-            }
-            else if(planner.PathFound())
-            {
-                double cost = planner.ComputePath(state_path);
-
-                //final path visualization
-                visualization_msgs::Marker path_marker = visualize_path_msg(state_path);
-                path_viz_pub.publish(path_marker);
-
-                visualization_msgs::MarkerArray path_points_marker = visualize_path_points_msg(state_path);
-                path_points_viz_pub.publish(path_points_marker);
-
-                //update current waypoint
-                if(waypoint_num < state_path.size())
+                //main planning loop
+                if(!planner.PathFound() && i < RRT_STAR_NUM_ITER)
                 {
-                    curr_state = state_path[waypoint_num];
-                    waypoint_num += 1;
+                    std::cout << "Iteration " << i << std::endl;
+                    planner.Iterate();
+                    i++;
                 }
-
-                if(!print_path_info)
+                else if(planner.PathFound())
                 {
-                    std::cout << "Finished planning with " << i + 1 << " samples!" << std::endl;
-                    std::cout << "Quadratic State Cost " << cost << std::endl;
-                    std::cout << "PATH SIZE: " << plan_length << std::endl;
-                    std::cout << "RESULT -> SOLUTION FOUND!" << std::endl;
-                    auto end = std::chrono::high_resolution_clock::now();
-                    auto time_elapsed_milli = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-                    std::cout << "Graph Nodes: " << tree->list.size() << std::endl;
-                    std::cout << "TIME: " << (double) time_elapsed_milli/1000 << std::endl;
-                    print_path_info = true;
+                    double cost = planner.ComputePath(state_path);
+
+                    //final path visualization
+                    visualization_msgs::Marker path_marker = visualize_path_msg(state_path);
+                    path_viz_pub.publish(path_marker);
+
+                    visualization_msgs::MarkerArray path_points_marker = visualize_path_points_msg(state_path);
+                    path_points_viz_pub.publish(path_points_marker);
+
+                    //update current waypoint
+                    if(waypoint_num < state_path.size())
+                    {
+                        curr_state = state_path[waypoint_num];
+                        waypoint_num += 1;
+                    }
+
+                    if(!print_path_info)
+                    {
+                        std::cout << "Finished planning with " << i + 1 << " samples!" << std::endl;
+                        std::cout << "Quadratic State Cost " << cost << std::endl;
+                        std::cout << "PATH SIZE: " << plan_length << std::endl;
+                        std::cout << "RESULT -> SOLUTION FOUND!" << std::endl;
+                        auto end = std::chrono::high_resolution_clock::now();
+                        auto time_elapsed_milli = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+                        std::cout << "Graph Nodes: " << tree->list.size() << std::endl;
+                        std::cout << "TIME: " << (double) time_elapsed_milli/1000 << std::endl;
+                        print_path_info = true;
+                    }
                 }
-            }
-            else
-            {
-                ROS_ERROR_STREAM("RESULT -> PATH NOT FOUND WITH RRT-STAR");
+                else
+                {
+                    ROS_ERROR_STREAM("RESULT -> PATH NOT FOUND WITH RRT-STAR");
+                }
             }
 
             //loop rate here

@@ -42,9 +42,8 @@ typedef Eigen::Matrix<double, 6, 3> MatrixB;
 #define GEO_MIN 35786000.0 // Minimum altitude for GEO
 #define GEO_MAX 42164000.0 // Maximum altitude for GEO
 
-
 // Default maximum distance and velocities for unform sampling in the LVLH frame (Clohessy-Wiltshire)
-#define MAX_DIST_LVLH 10
+#define MAX_DIST_LVLH 35
 #define MAX_VEL_LVLH 0.75
 
 // Assumed default mass of the spacecraft
