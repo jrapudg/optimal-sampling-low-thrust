@@ -27,7 +27,6 @@ LQR::LQR(const MatrixQ& Q, const MatrixR& R)
         throw std::invalid_argument("Matrices Q and R must be square.");
     }
 
-    dim = Q.rows(); // must be 6
 
     // TODO check Q is p.s.d, R is p.d
 

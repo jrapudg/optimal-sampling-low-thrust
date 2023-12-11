@@ -48,8 +48,6 @@ class LQR
         MatrixQ Q;
         MatrixR R;
 
-        int dim;
-
         void _SolveRicatti(const MatrixA& A, const MatrixB& B, MatrixS& S, double tol, bool DEBUG=false);
         
 
